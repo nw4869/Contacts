@@ -1,12 +1,12 @@
 package com.nightwind.contacts.fragment;
 
 
-import android.content.AsyncQueryHandler;
-import android.content.ContentResolver;
+import android.net.Uri;
+import android.support.v4.app.LoaderManager;
 import android.content.Context;
-import android.database.Cursor;
 import android.os.Bundle;
 import android.app.Fragment;
+import android.support.v4.content.Loader;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -18,13 +18,10 @@ import android.widget.TextView;
 import com.nightwind.contacts.R;
 import com.nightwind.contacts.activity.MainActivity;
 import com.nightwind.contacts.model.Contact;
-import com.nightwind.contacts.model.ContactEntity;
+import com.nightwind.contacts.model.ContactsLoader;
 
-import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
-
-import android.provider.ContactsContract.CommonDataKinds.Phone;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -32,7 +29,7 @@ import android.provider.ContactsContract.CommonDataKinds.Phone;
 public class ContactFragment extends MainActivity.PlaceholderFragment {
 
     RecyclerView recyclerView;
-    private ArrayList<ContactEntity> contacts;
+    private ArrayList<Contact> contacts;
     private ContactAdapter adapter;
 
     public ContactFragment() {
@@ -52,8 +49,7 @@ public class ContactFragment extends MainActivity.PlaceholderFragment {
 
         contacts = new ArrayList<>();
 
-        // init dummy data
-        initDummyData();
+        initData();
 
         adapter = new ContactAdapter(getActivity(), contacts);
         recyclerView.setAdapter(adapter);
@@ -61,71 +57,63 @@ public class ContactFragment extends MainActivity.PlaceholderFragment {
         return  v;
     }
 
-    private void initDummyData() {
-//        String[] contactNames = getResources().getStringArray(R.array.contactName);
-//        for (String contactName: contactNames) {
-//            contacts.add(new ContactEntity(contactName, null));
-//        }
+    private void initData() {
+//        ContentResolver resolver = getActivity().getContentResolver();
+//        String projection[] = new String[] {Phone._ID, Phone.NUMBER, Phone.TYPE, Phone.LABEL, Phone.DISPLAY_NAME};
+////        Cursor cursor = resolver.query(ContactsContract.Data.CONTENT_URI, projection, null, null, null);
+//        new ContactsAsyncQueryHandler(resolver, this).startQuery(0, null, Phone.CONTENT_URI, projection, null, null, null);
 
-        ContentResolver resolver = getActivity().getContentResolver();
-        String projection[] = new String[] {Phone._ID, Phone.NUMBER, Phone.TYPE, Phone.LABEL, Phone.DISPLAY_NAME};
+        getLoaderManager().initLoader(0, null, new LoaderManager.LoaderCallbacks<List<Contact>>() {
 
-//        Cursor cursor = resolver.query(ContactsContract.Data.CONTENT_URI, projection, null, null, null);
-        new ContactsAsyncQueryHandler(resolver, this).startQuery(0, null, Phone.CONTENT_URI, projection, null, null, null);
+            @Override
+            public Loader<List<Contact>> onCreateLoader(int id, Bundle args) {
+                return new ContactsLoader(getActivity());
+            }
+
+            @Override
+            public void onLoadFinished(Loader<List<Contact>> loader, List<Contact> data) {
+                contacts.clear();
+                contacts.addAll(data);
+                refreshData();
+            }
+
+            @Override
+            public void onLoaderReset(Loader<List<Contact>> loader) {
+
+            }
+        });
     }
 
-    static private class ContactsAsyncQueryHandler extends AsyncQueryHandler {
 
-        private WeakReference<ContactFragment> contactFragment;
-
-        public ContactsAsyncQueryHandler(ContentResolver cr, ContactFragment contactFragment) {
-            super(cr);
-            this.contactFragment = new WeakReference<>(contactFragment);
-        }
-
-
-        @Override
-        protected void onQueryComplete(int token, Object cookie, Cursor cursor) {
-            super.onQueryComplete(token, cookie, cursor);
-
-            try {
-                cursor.moveToFirst();
-                do {
-                    ContactEntity contact = new ContactEntity();
-                    contact.name = (cursor.getString(4));
-                    contact.phoneNumber = (cursor.getString(1));
-                    contactFragment.get().contacts.add(contact);
-                } while (cursor.moveToNext());
-            } finally {
-                cursor.close();
-            }
-            contactFragment.get().refreshData();
-        }
-
-//        protected List<ContactEntity> createContactEntryFromCursor(Cursor cursor) {
-//            List<ContactEntity> contacts = new ArrayList<>();
-//            if (!cursorIsValid(cursor)) {
-//                return new ArrayList<>();
-//            }
+//    static private class ContactsAsyncQueryHandler extends AsyncQueryHandler {
+//
+//        private WeakReference<ContactFragment> contactFragment;
+//
+//        public ContactsAsyncQueryHandler(ContentResolver cr, ContactFragment contactFragment) {
+//            super(cr);
+//            this.contactFragment = new WeakReference<>(contactFragment);
+//        }
+//
+//
+//        @Override
+//        protected void onQueryComplete(int token, Object cookie, Cursor cursor) {
+//            super.onQueryComplete(token, cookie, cursor);
+//
 //            try {
 //                cursor.moveToFirst();
 //                do {
-//                    ContactEntity contact = new ContactEntity();
+//                    Contact contact = new Contact();
 //                    contact.name = (cursor.getString(4));
 //                    contact.phoneNumber = (cursor.getString(1));
-//                    contacts.add(contact);
+//                    contactFragment.get().contacts.add(contact);
 //                } while (cursor.moveToNext());
 //            } finally {
 //                cursor.close();
 //            }
-//
-//            return contacts;
+//            contactFragment.get().refreshData();
 //        }
 //
-//        private boolean cursorIsValid(Cursor cursor) {
-//            return cursor != null && !cursor.isClosed();
-//        }
-    }
+//    }
 
     private void refreshData() {
         adapter.notifyDataSetChanged();
@@ -134,9 +122,9 @@ public class ContactFragment extends MainActivity.PlaceholderFragment {
     private class ContactAdapter extends RecyclerView.Adapter<ContactViewHolder> {
 
         private Context context;
-        private final List<ContactEntity> contacts;
+        private final List<Contact> contacts;
 
-        public ContactAdapter(Context context, List<ContactEntity> contacts) {
+        public ContactAdapter(Context context, List<Contact> contacts) {
             this.context = context;
             this.contacts = contacts;
         }
@@ -177,9 +165,12 @@ public class ContactFragment extends MainActivity.PlaceholderFragment {
             photo = (ImageView) itemView.findViewById(R.id.photo);
         }
 
-        public void bindView(ContactEntity contactEntity) {
+        public void bindView(Contact contact) {
             itemView.setOnClickListener(onClickListener);
-            name.setText(contactEntity.name);
+            name.setText(contact.getName());
+            if (contact.getPhotoUri() != null) {
+                photo.setImageURI(Uri.parse(contact.getPhotoUri()));
+            }
         }
     }
 

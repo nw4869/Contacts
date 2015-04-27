@@ -4,6 +4,7 @@ import android.content.AsyncTaskLoader;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.database.Cursor;
+import android.provider.ContactsContract;
 import android.provider.ContactsContract.*;
 
 import com.google.common.collect.ImmutableList;
@@ -12,8 +13,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Created by nightwind on 15/4/21.
- */
+* Created by nightwind on 15/4/21.
+*/
 public class ContactLoader extends AsyncTaskLoader<Contact> {
 
 
@@ -23,21 +24,21 @@ public class ContactLoader extends AsyncTaskLoader<Contact> {
      */
     private static class ContactQuery {
         static final String[] COLUMNS = new String[] {
-                Contacts.NAME_RAW_CONTACT_ID,
-                Contacts.DISPLAY_NAME_SOURCE,
-                Contacts.LOOKUP_KEY,
-                Contacts.DISPLAY_NAME,
-                Contacts.DISPLAY_NAME_ALTERNATIVE,
-                Contacts.PHONETIC_NAME,
-                Contacts.PHOTO_ID,
-                Contacts.STARRED,
-                Contacts.CONTACT_PRESENCE,
-                Contacts.CONTACT_STATUS,
-                Contacts.CONTACT_STATUS_TIMESTAMP,
-                Contacts.CONTACT_STATUS_RES_PACKAGE,
-                Contacts.CONTACT_STATUS_LABEL,
-                Contacts.Entity.CONTACT_ID,
-                Contacts.Entity.RAW_CONTACT_ID,
+                ContactsContract.Contacts.NAME_RAW_CONTACT_ID,
+                ContactsContract.Contacts.DISPLAY_NAME_SOURCE,
+                ContactsContract.Contacts.LOOKUP_KEY,
+                ContactsContract.Contacts.DISPLAY_NAME,
+                ContactsContract.Contacts.DISPLAY_NAME_ALTERNATIVE,
+                ContactsContract.Contacts.PHONETIC_NAME,/**/
+                ContactsContract.Contacts.PHOTO_ID,
+                ContactsContract.Contacts.STARRED,
+                ContactsContract.Contacts.CONTACT_PRESENCE,
+                ContactsContract.Contacts.CONTACT_STATUS,
+                ContactsContract.Contacts.CONTACT_STATUS_TIMESTAMP,
+                ContactsContract.Contacts.CONTACT_STATUS_RES_PACKAGE,
+                ContactsContract.Contacts.CONTACT_STATUS_LABEL,
+                ContactsContract.Contacts.Entity.CONTACT_ID,
+                ContactsContract.Contacts.Entity.RAW_CONTACT_ID,
 
                 RawContacts.ACCOUNT_NAME,
                 RawContacts.ACCOUNT_TYPE,
@@ -51,7 +52,7 @@ public class ContactLoader extends AsyncTaskLoader<Contact> {
                 RawContacts.SYNC4,
                 RawContacts.DELETED,
 
-                Contacts.Entity.DATA_ID,
+                ContactsContract.Contacts.Entity.DATA_ID,
                 Data.DATA1,
                 Data.DATA2,
                 Data.DATA3,
@@ -86,10 +87,10 @@ public class ContactLoader extends AsyncTaskLoader<Contact> {
                 Data.STATUS_LABEL,
                 Data.STATUS_TIMESTAMP,
 
-                Contacts.PHOTO_URI,
-                Contacts.SEND_TO_VOICEMAIL,
-                Contacts.CUSTOM_RINGTONE,
-                Contacts.IS_USER_PROFILE,
+                ContactsContract.Contacts.PHOTO_URI,
+                ContactsContract.Contacts.SEND_TO_VOICEMAIL,
+                ContactsContract.Contacts.CUSTOM_RINGTONE,
+                ContactsContract.Contacts.IS_USER_PROFILE,
 
                 Data.TIMES_USED,
                 Data.LAST_TIME_USED,
