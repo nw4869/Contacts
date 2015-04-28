@@ -34,6 +34,7 @@ public class ContactsLoader extends AsyncTaskLoader<List<Contact>> {
             ContactsContract.Contacts.CONTACT_PRESENCE, // .............................5
             ContactsContract.Contacts.CONTACT_STATUS, // ...............................6
 //            ContactsContract.Contacts.PHOTO_THUMBNAIL_URI, // ..........................7
+            ContactsContract.Contacts.SORT_KEY_PRIMARY
     };
 
     public ContactsLoader(Context context) {
@@ -41,12 +42,21 @@ public class ContactsLoader extends AsyncTaskLoader<List<Contact>> {
     }
 
     @Override
+    protected void onStartLoading() {
+        super.onStartLoading();
+        forceLoad();
+    }
+
+    @Override
     public List<Contact> loadInBackground() {
         Cursor cursor = getContext().getContentResolver().query(ContactsContract.Contacts.CONTENT_URI,
-                COLUMNS, null,null, null);
+                COLUMNS, null,null, "sort_key COLLATE LOCALIZED asc");
         List<Contact> contacts = new ArrayList<>();
         try {
-            cursor.moveToFirst();
+            if (!cursor.moveToFirst()) {
+                return contacts;
+            }
+
             do {
                 int id = cursor.getInt(ContactsLoader.CONTACT_ID);
                 String name = cursor.getString(ContactsLoader.DISPLAY_NAME);

@@ -1,9 +1,16 @@
 package com.nightwind.contacts.model;
 
 import android.content.ContentProviderOperation;
+import android.content.ContentProviderResult;
+import android.content.Context;
+import android.content.OperationApplicationException;
+import android.os.RemoteException;
 import android.provider.ContactsContract;
+import android.util.Log;
 
 import com.nightwind.contacts.model.dataitem.DataItem;
+import com.nightwind.contacts.model.dataitem.EmailDataItem;
+import com.nightwind.contacts.model.dataitem.PhoneDataItem;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,7 +20,14 @@ import java.util.List;
  */
 public class Contacts {
 
-    public void insertContact(String name, String photoUri, List<DataItem> dataItems) {
+    private static final String TAG = "Contacts";
+    private final Context context;
+
+    public Contacts(Context context) {
+        this.context = context;
+    }
+
+    public void saveContact(String name, String photoUri, List<DataItem> dataItems) throws RemoteException, OperationApplicationException {
         ArrayList<ContentProviderOperation> ops = new ArrayList<>();
         int rawContactInsertIndex = ops.size();
         ops.add(ContentProviderOperation.newInsert(ContactsContract.RawContacts.CONTENT_URI)
@@ -25,6 +39,33 @@ public class Contacts {
                 .withValue(ContactsContract.RawContacts.Data.MIMETYPE, ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE)
                 .withValue(ContactsContract.CommonDataKinds.StructuredName.GIVEN_NAME, name)
                 .build());
+        for (DataItem dataItem: dataItems) {
+            if (dataItem.getMimeType().equals(ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE)) {
+                PhoneDataItem phoneDataItem = (PhoneDataItem) dataItem;
+                ops.add(ContentProviderOperation.newInsert(android.provider.ContactsContract.Data.CONTENT_URI)
+                        .withValueBackReference(ContactsContract.RawContacts.Data.RAW_CONTACT_ID, rawContactInsertIndex)
+                        .withValue(ContactsContract.RawContacts.Data.MIMETYPE, ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE)
+                        .withValue(ContactsContract.CommonDataKinds.Phone.NUMBER, phoneDataItem.getNumber())
+                        .withValue(ContactsContract.CommonDataKinds.Phone.TYPE, ContactsContract.CommonDataKinds.Phone.TYPE_MOBILE)
+                        .withValue(ContactsContract.CommonDataKinds.Phone.LABEL, phoneDataItem.getLabel())
+                        .build());
+            } else if (dataItem.getMimeType().equals(ContactsContract.CommonDataKinds.Email.CONTENT_ITEM_TYPE)) {
+                EmailDataItem emailDataItem = (EmailDataItem) dataItem;
+                ops.add(ContentProviderOperation.newInsert(android.provider.ContactsContract.Data.CONTENT_URI)
+                        .withValueBackReference(ContactsContract.RawContacts.Data.RAW_CONTACT_ID, rawContactInsertIndex)
+                        .withValue(ContactsContract.RawContacts.Data.MIMETYPE, ContactsContract.CommonDataKinds.Email.CONTENT_ITEM_TYPE)
+                        .withValue(ContactsContract.CommonDataKinds.Email.DATA, emailDataItem.getAddress())
+                        .withValue(ContactsContract.CommonDataKinds.Email.TYPE, ContactsContract.CommonDataKinds.Email.TYPE_WORK)
+                        .withValue(ContactsContract.CommonDataKinds.Email.LABEL, emailDataItem.getLabel())
+                        .build());
+            }
+        }
+        ContentProviderResult[] results = context.getContentResolver()
+                .applyBatch(ContactsContract.AUTHORITY, ops);
+        for(ContentProviderResult result : results)
+        {
+            Log.i(TAG, result.uri.toString());
+        }
 
     }
 }

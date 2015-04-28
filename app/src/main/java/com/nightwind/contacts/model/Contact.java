@@ -16,7 +16,7 @@ public class Contact {
         return name;
     }
 
-    void setName(String name) {
+    public void setName(String name) {
         this.name = name;
     }
 
@@ -24,7 +24,7 @@ public class Contact {
         return photoUri;
     }
 
-    void setPhotoUri(String photoUri) {
+    public void setPhotoUri(String photoUri) {
         this.photoUri = photoUri;
     }
 
@@ -32,7 +32,7 @@ public class Contact {
         return data;
     }
 
-    void setData(List<DataItem> data) {
+    public void setData(List<DataItem> data) {
         this.data = data;
     }
 }

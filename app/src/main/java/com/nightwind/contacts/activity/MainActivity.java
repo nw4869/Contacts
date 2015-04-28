@@ -1,6 +1,7 @@
 package com.nightwind.contacts.activity;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.app.ActionBar;
 import android.support.v4.app.Fragment;
@@ -14,7 +15,6 @@ import android.view.ViewGroup;
 import android.support.v4.widget.DrawerLayout;
 
 import com.nightwind.contacts.R;
-import com.nightwind.contacts.fragment.ContactFragment;
 import com.nightwind.contacts.fragment.NavigationDrawerFragment;
 
 public class MainActivity extends ActionBarActivity
@@ -99,6 +99,10 @@ public class MainActivity extends ActionBarActivity
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
             return true;
+        } else if (id == R.id.action_test) {
+            Intent intent = new Intent(this, MainTabbedActivity.class);
+            startActivity(intent);
+            return true;
         }
 
         return super.onOptionsItemSelected(item);
@@ -121,9 +125,9 @@ public class MainActivity extends ActionBarActivity
         public static PlaceholderFragment newInstance(int sectionNumber) {
             PlaceholderFragment fragment;
             switch (sectionNumber) {
-                case 1:
-                    fragment = new ContactFragment();
-                    break;
+//                case 1:
+//                    fragment = new ContactFragment();
+//                    break;
                 default:
                     fragment = new PlaceholderFragment();
                     break;

@@ -1,11 +1,11 @@
 package com.nightwind.contacts.fragment;
 
-
-import android.net.Uri;
-import android.support.v4.app.LoaderManager;
+import android.app.Activity;
 import android.content.Context;
+import android.net.Uri;
 import android.os.Bundle;
-import android.app.Fragment;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.LoaderManager;
 import android.support.v4.content.Loader;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -16,162 +16,244 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.nightwind.contacts.R;
-import com.nightwind.contacts.activity.MainActivity;
 import com.nightwind.contacts.model.Contact;
-import com.nightwind.contacts.model.ContactsLoader;
+import com.nightwind.contacts.model.ContactLoader;
+import com.nightwind.contacts.model.dataitem.DataItem;
+import com.nightwind.contacts.model.dataitem.EmailDataItem;
+import com.nightwind.contacts.model.dataitem.PhoneDataItem;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * A simple {@link Fragment} subclass.
+ * Activities that contain this fragment must implement the
+ * {@link ContactFragment.OnFragmentInteractionListener} interface
+ * to handle interaction events.
+ * Use the {@link ContactFragment#newInstance} factory method to
+ * create an instance of this fragment.
  */
-public class ContactFragment extends MainActivity.PlaceholderFragment {
+public class ContactFragment extends Fragment {
+    // TODO: Rename parameter arguments, choose names that match
+    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
+    private static final String ARG_PARAM1 = "param1";
+    private static final String ARG_PARAM2 = "param2";
 
-    RecyclerView recyclerView;
-    private ArrayList<Contact> contacts;
+    // TODO: Rename and change types of parameters
+    private String mParam1;
+    private String mParam2;
+
+    private OnFragmentInteractionListener mListener;
+
+    private RecyclerView recyclerView;
+    private Contact contact;
+//    private List<DataItem> dataItems = new ArrayList<>();
     private ContactAdapter adapter;
+
+    /**
+     * Use this factory method to create a new instance of
+     * this fragment using the provided parameters.
+     *
+     * @param param1 Parameter 1.
+     * @param param2 Parameter 2.
+     * @return A new instance of fragment ContactFragment.
+     */
+    // TODO: Rename and change types and number of parameters
+    public static ContactFragment newInstance(String param1, String param2) {
+        ContactFragment fragment = new ContactFragment();
+        Bundle args = new Bundle();
+        args.putString(ARG_PARAM1, param1);
+        args.putString(ARG_PARAM2, param2);
+        fragment.setArguments(args);
+        return fragment;
+    }
 
     public ContactFragment() {
         // Required empty public constructor
     }
 
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        if (getArguments() != null) {
+            mParam1 = getArguments().getString(ARG_PARAM1);
+            mParam2 = getArguments().getString(ARG_PARAM2);
+        }
+    }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        View v =  inflater.inflate(R.layout.fragment_contact, container, false);
+        View view = inflater.inflate(R.layout.fragment_contact, container, false);
 
-        recyclerView = (RecyclerView) v.findViewById(R.id.recyclerView);
+        recyclerView = (RecyclerView) view.findViewById(R.id.recyclerView);
 
         recyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
 
-        contacts = new ArrayList<>();
+        loadContact();
 
-        initData();
+        recyclerView.setAdapter(new ContactAdapter(getActivity(), contact));
 
-        adapter = new ContactAdapter(getActivity(), contacts);
-        recyclerView.setAdapter(adapter);
-
-        return  v;
+        return view;
     }
 
-    private void initData() {
-//        ContentResolver resolver = getActivity().getContentResolver();
-//        String projection[] = new String[] {Phone._ID, Phone.NUMBER, Phone.TYPE, Phone.LABEL, Phone.DISPLAY_NAME};
-////        Cursor cursor = resolver.query(ContactsContract.Data.CONTENT_URI, projection, null, null, null);
-//        new ContactsAsyncQueryHandler(resolver, this).startQuery(0, null, Phone.CONTENT_URI, projection, null, null, null);
 
-        getLoaderManager().initLoader(0, null, new LoaderManager.LoaderCallbacks<List<Contact>>() {
+    // TODO: Rename method, update argument and hook method into UI event
+    public void onButtonPressed(Uri uri) {
+        if (mListener != null) {
+            mListener.onFragmentInteraction(uri);
+        }
+    }
 
+    @Override
+    public void onAttach(Activity activity) {
+        super.onAttach(activity);
+//        try {
+//            mListener = (OnFragmentInteractionListener) activity;
+//        } catch (ClassCastException e) {
+//            throw new ClassCastException(activity.toString()
+//                    + " must implement OnFragmentInteractionListener");
+//        }
+    }
+
+    @Override
+    public void onDetach() {
+        super.onDetach();
+        mListener = null;
+    }
+
+    /**
+     * This interface must be implemented by activities that contain this
+     * fragment to allow an interaction in this fragment to be communicated
+     * to the activity and potentially other fragments contained in that
+     * activity.
+     * <p/>
+     * See the Android Training lesson <a href=
+     * "http://developer.android.com/training/basics/fragments/communicating.html"
+     * >Communicating with Other Fragments</a> for more information.
+     */
+    public interface OnFragmentInteractionListener {
+        // TODO: Update argument type and name
+        public void onFragmentInteraction(Uri uri);
+    }
+
+    class ContactAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+
+        private final Context context;
+        private final List<DataItem> dataItems;
+        private final int VIEW_TYPE_PHOTO = 1;
+        private final int VIEW_TYPE_NORMAL = 0;
+        private final Contact contact;
+
+        public ContactAdapter(Context context, Contact contact) {
+            this.context = context;
+            this.contact = contact;
+            this.dataItems = contact.getData();
+        }
+
+        @Override
+        public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+            RecyclerView.ViewHolder viewHolder;
+            if (viewType == VIEW_TYPE_NORMAL) {
+                View view = LayoutInflater.from(context).inflate(R.layout.photo_image, parent, false);
+                viewHolder = new DataItemViewHolder(view);
+            } else {
+                View view = LayoutInflater.from(context).inflate(R.layout.item_dataitem, parent, false);
+                viewHolder = new DataItemViewHolder(view);
+            }
+            return viewHolder;
+        }
+
+        @Override
+        public int getItemViewType(int position) {
+            if (position == 0) {
+                return VIEW_TYPE_PHOTO;
+            } else {
+                return VIEW_TYPE_NORMAL;
+            }
+        }
+
+        @Override
+        public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
+            if (holder.getItemViewType() == VIEW_TYPE_PHOTO) {
+                PhotoViewHolder viewHolder = (PhotoViewHolder) holder;
+                if (contact.getPhotoUri() != null) {
+                    viewHolder.imageView.setImageURI(Uri.parse(contact.getPhotoUri()));
+                }
+            } else {
+                DataItem dataItem = dataItems.get(position - 1);
+                DataItemViewHolder viewHolder = (DataItemViewHolder) holder;
+                if (dataItem instanceof PhoneDataItem) {
+                    PhoneDataItem phoneDataItem = (PhoneDataItem) dataItem;
+                    viewHolder.label.setText(phoneDataItem.getLabel());
+                    viewHolder.data.setText(phoneDataItem.getNumber());
+                } else if (dataItem instanceof EmailDataItem) {
+                    EmailDataItem emailDataItem = (EmailDataItem) dataItem;
+                    viewHolder.label.setText(emailDataItem.getLabel());
+                    viewHolder.data.setText(emailDataItem.getAddress());
+                }
+            }
+        }
+
+        @Override
+        public int getItemCount() {
+            return dataItems.size();
+        }
+    }
+
+    private class PhotoViewHolder extends RecyclerView.ViewHolder {
+
+        public final ImageView imageView;
+
+        public PhotoViewHolder(View itemView) {
+            super(itemView);
+            imageView = (ImageView) itemView.findViewById(R.id.photo);
+        }
+    }
+
+    private class DataItemViewHolder extends RecyclerView.ViewHolder{
+        public final ImageView typeImage;
+        public final TextView data;
+        public final TextView label;
+        public final ImageView actionImage;
+
+        public DataItemViewHolder(View itemView) {
+            super(itemView);
+            typeImage = (ImageView) itemView.findViewById(R.id.typeImage);
+            data = (TextView) itemView.findViewById(R.id.data);
+            label = (TextView) itemView.findViewById(R.id.label);
+            actionImage = (ImageView) itemView.findViewById(R.id.actionImage);
+        }
+    }
+
+
+    private void loadContact() {
+        getLoaderManager().initLoader(0, null, new LoaderManager.LoaderCallbacks<Contact>() {
             @Override
-            public Loader<List<Contact>> onCreateLoader(int id, Bundle args) {
-                return new ContactsLoader(getActivity());
+            public Loader<Contact> onCreateLoader(int id, Bundle args) {
+                return new ContactLoader(getActivity());
             }
 
             @Override
-            public void onLoadFinished(Loader<List<Contact>> loader, List<Contact> data) {
-                contacts.clear();
-                contacts.addAll(data);
+            public void onLoadFinished(Loader<Contact> loader, Contact data) {
+                List<DataItem> dataItems = contact.getData();
+//                dataItems.clear();
+//                dataItems.addAll(data.getData());
+                contact.setData(data.getData());
+                contact.setName(data.getName());
+                contact.setPhotoUri(data.getPhotoUri());
                 refreshData();
             }
 
             @Override
-            public void onLoaderReset(Loader<List<Contact>> loader) {
+            public void onLoaderReset(Loader<Contact> loader) {
 
             }
         });
     }
 
-
-//    static private class ContactsAsyncQueryHandler extends AsyncQueryHandler {
-//
-//        private WeakReference<ContactFragment> contactFragment;
-//
-//        public ContactsAsyncQueryHandler(ContentResolver cr, ContactFragment contactFragment) {
-//            super(cr);
-//            this.contactFragment = new WeakReference<>(contactFragment);
-//        }
-//
-//
-//        @Override
-//        protected void onQueryComplete(int token, Object cookie, Cursor cursor) {
-//            super.onQueryComplete(token, cookie, cursor);
-//
-//            try {
-//                cursor.moveToFirst();
-//                do {
-//                    Contact contact = new Contact();
-//                    contact.name = (cursor.getString(4));
-//                    contact.phoneNumber = (cursor.getString(1));
-//                    contactFragment.get().contacts.add(contact);
-//                } while (cursor.moveToNext());
-//            } finally {
-//                cursor.close();
-//            }
-//            contactFragment.get().refreshData();
-//        }
-//
-//    }
-
     private void refreshData() {
         adapter.notifyDataSetChanged();
     }
-
-    private class ContactAdapter extends RecyclerView.Adapter<ContactViewHolder> {
-
-        private Context context;
-        private final List<Contact> contacts;
-
-        public ContactAdapter(Context context, List<Contact> contacts) {
-            this.context = context;
-            this.contacts = contacts;
-        }
-
-        @Override
-        public ContactViewHolder onCreateViewHolder(ViewGroup viewGroup, int i) {
-            View v = LayoutInflater.from(context).inflate(R.layout.item_contact, viewGroup, false);
-            return new ContactViewHolder(v);
-        }
-
-        @Override
-        public void onBindViewHolder(ContactViewHolder contactViewHolder, int i) {
-            contactViewHolder.bindView(contacts.get(i));
-        }
-
-        @Override
-        public int getItemCount() {
-            return contacts.size();
-        }
-
-    }
-
-
-    private class ContactViewHolder extends RecyclerView.ViewHolder {
-
-        public TextView name;
-        public ImageView photo;
-
-        private View.OnClickListener onClickListener;
-
-        public void setOnClickListener(View.OnClickListener onClickListener) {
-            this.onClickListener = onClickListener;
-        }
-
-        public ContactViewHolder(View itemView) {
-            super(itemView);
-            name = (TextView) itemView.findViewById(R.id.name);
-            photo = (ImageView) itemView.findViewById(R.id.photo);
-        }
-
-        public void bindView(Contact contact) {
-            itemView.setOnClickListener(onClickListener);
-            name.setText(contact.getName());
-            if (contact.getPhotoUri() != null) {
-                photo.setImageURI(Uri.parse(contact.getPhotoUri()));
-            }
-        }
-    }
-
 }

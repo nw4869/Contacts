@@ -1,0 +1,41 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="com.nightwind.contacts.activity.MainToolbarActivity">
+
+    <!--Toolbar-->
+    <include android:id="@+id/toolbar" layout="@layout/toolbar" />
+
+    <LinearLayout
+        android:layout_below="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical" >
+
+        <com.nightwind.contacts.widget.PagerSlidingTabStrip
+            xmlns:app="http://schemas.android.com/apk/res-auto"
+            android:id="@+id/tabs"
+            android:layout_width="match_parent"
+            android:layout_height="48dip">
+
+            <!--app:pstsTabBackground="@color/colorPrimary"-->
+            <!--app:pstsIndicatorColor="@color/colorPrimaryDark"-->
+            <!--app:pstsDividerColor="@android:color/transparent"-->
+            <!--app:pstsShouldExpand="true"-->
+
+        </com.nightwind.contacts.widget.PagerSlidingTabStrip>
+
+        <android.support.v4.view.ViewPager
+            android:id="@+id/pager"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" >
+        </android.support.v4.view.ViewPager>
+    </LinearLayout>
+
+    <FrameLayout
+        android:id="@+id/container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+    </FrameLayout>
+
+</RelativeLayout>

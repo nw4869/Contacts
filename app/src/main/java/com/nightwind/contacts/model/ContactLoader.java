@@ -1,6 +1,6 @@
 package com.nightwind.contacts.model;
 
-import android.content.AsyncTaskLoader;
+import android.support.v4.content.AsyncTaskLoader;
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
@@ -193,6 +193,7 @@ public class ContactLoader extends AsyncTaskLoader<Contact> {
 //        }
 //
 //        return contacts.get(0);
+        Contact contact = new Contact();
         return null;
     }
 

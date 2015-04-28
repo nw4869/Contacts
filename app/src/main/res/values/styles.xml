@@ -5,4 +5,17 @@
         <!-- Customize your theme here. -->
     </style>
 
+    <style name="ToolbarAppTheme" parent="Theme.AppCompat.Light.NoActionBar">
+        <!-- Actionbar color -->
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <!--Status bar color-->
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <!--Window color-->
+        <!--<item name="android:windowBackground">@color/dim_foreground_material_dark</item>-->
+    </style>
+
+    <color name="colorPrimary" >#03A9F4</color>
+    <color name="colorPrimaryDark" >#0288D1</color>
+    <color name="colorTabNormalText">#B3E5FC</color>
+
 </resources>

@@ -11,7 +11,12 @@ import android.provider.ContactsContract;
 import android.test.AndroidTestCase;
 import android.util.Log;
 
+import com.nightwind.contacts.model.Contacts;
+import com.nightwind.contacts.model.dataitem.DataItem;
+import com.nightwind.contacts.model.dataitem.PhoneDataItem;
+
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by nightwind on 15/4/23.
@@ -20,6 +25,16 @@ public class ContactTest extends AndroidTestCase
 {
     private static final String TAG = "ContactTest";
 
+    public void testQueryContact() {
+        
+    }
+
+    public void testContactSave1() throws Throwable {
+        String name = "nw";
+        List<DataItem> dataItems = new ArrayList<>();
+//        PhoneDataItem phoneDataItem = DataItem.createFrom()
+        Contacts contacts = new Contacts(getContext());
+    }
 
     public void testGetAllContact() throws Throwable
     {
