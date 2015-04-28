@@ -2,6 +2,7 @@ package com.nightwind.contacts.model;
 
 import android.content.AsyncTaskLoader;
 import android.content.ContentResolver;
+import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.provider.ContactsContract;
@@ -195,5 +196,90 @@ public class ContactLoader extends AsyncTaskLoader<Contact> {
         return null;
     }
 
+
+    /**
+     * Extracts RawContact level columns from the cursor.
+     */
+    private ContentValues loadRawContactValues(Cursor cursor) {
+        ContentValues cv = new ContentValues();
+
+        cv.put(RawContacts._ID, cursor.getLong(ContactQuery.RAW_CONTACT_ID));
+
+        cursorColumnToContentValues(cursor, cv, ContactQuery.ACCOUNT_NAME);
+        cursorColumnToContentValues(cursor, cv, ContactQuery.ACCOUNT_TYPE);
+        cursorColumnToContentValues(cursor, cv, ContactQuery.DATA_SET);
+        cursorColumnToContentValues(cursor, cv, ContactQuery.DIRTY);
+        cursorColumnToContentValues(cursor, cv, ContactQuery.VERSION);
+        cursorColumnToContentValues(cursor, cv, ContactQuery.SOURCE_ID);
+        cursorColumnToContentValues(cursor, cv, ContactQuery.SYNC1);
+        cursorColumnToContentValues(cursor, cv, ContactQuery.SYNC2);
+        cursorColumnToContentValues(cursor, cv, ContactQuery.SYNC3);
+        cursorColumnToContentValues(cursor, cv, ContactQuery.SYNC4);
+        cursorColumnToContentValues(cursor, cv, ContactQuery.DELETED);
+        cursorColumnToContentValues(cursor, cv, ContactQuery.CONTACT_ID);
+        cursorColumnToContentValues(cursor, cv, ContactQuery.STARRED);
+
+        return cv;
+    }
+
+
+    /**
+     * Extracts Data level columns from the cursor.
+     */
+    private ContentValues loadDataValues(Cursor cursor) {
+        ContentValues cv = new ContentValues();
+
+        cv.put(Data._ID, cursor.getLong(ContactQuery.DATA_ID));
+
+        cursorColumnToContentValues(cursor, cv, ContactQuery.DATA1);
+        cursorColumnToContentValues(cursor, cv, ContactQuery.DATA2);
+        cursorColumnToContentValues(cursor, cv, ContactQuery.DATA3);
+        cursorColumnToContentValues(cursor, cv, ContactQuery.DATA4);
+        cursorColumnToContentValues(cursor, cv, ContactQuery.DATA5);
+        cursorColumnToContentValues(cursor, cv, ContactQuery.DATA6);
+        cursorColumnToContentValues(cursor, cv, ContactQuery.DATA7);
+        cursorColumnToContentValues(cursor, cv, ContactQuery.DATA8);
+        cursorColumnToContentValues(cursor, cv, ContactQuery.DATA9);
+        cursorColumnToContentValues(cursor, cv, ContactQuery.DATA10);
+        cursorColumnToContentValues(cursor, cv, ContactQuery.DATA11);
+        cursorColumnToContentValues(cursor, cv, ContactQuery.DATA12);
+        cursorColumnToContentValues(cursor, cv, ContactQuery.DATA13);
+        cursorColumnToContentValues(cursor, cv, ContactQuery.DATA14);
+        cursorColumnToContentValues(cursor, cv, ContactQuery.DATA15);
+        cursorColumnToContentValues(cursor, cv, ContactQuery.DATA_SYNC1);
+        cursorColumnToContentValues(cursor, cv, ContactQuery.DATA_SYNC2);
+        cursorColumnToContentValues(cursor, cv, ContactQuery.DATA_SYNC3);
+        cursorColumnToContentValues(cursor, cv, ContactQuery.DATA_SYNC4);
+        cursorColumnToContentValues(cursor, cv, ContactQuery.DATA_VERSION);
+        cursorColumnToContentValues(cursor, cv, ContactQuery.IS_PRIMARY);
+        cursorColumnToContentValues(cursor, cv, ContactQuery.IS_SUPERPRIMARY);
+        cursorColumnToContentValues(cursor, cv, ContactQuery.MIMETYPE);
+        cursorColumnToContentValues(cursor, cv, ContactQuery.GROUP_SOURCE_ID);
+        cursorColumnToContentValues(cursor, cv, ContactQuery.CHAT_CAPABILITY);
+        cursorColumnToContentValues(cursor, cv, ContactQuery.TIMES_USED);
+        cursorColumnToContentValues(cursor, cv, ContactQuery.LAST_TIME_USED);
+
+        return cv;
+    }
+
+    private void cursorColumnToContentValues(
+            Cursor cursor, ContentValues values, int index) {
+        switch (cursor.getType(index)) {
+            case Cursor.FIELD_TYPE_NULL:
+                // don't put anything in the content values
+                break;
+            case Cursor.FIELD_TYPE_INTEGER:
+                values.put(ContactQuery.COLUMNS[index], cursor.getLong(index));
+                break;
+            case Cursor.FIELD_TYPE_STRING:
+                values.put(ContactQuery.COLUMNS[index], cursor.getString(index));
+                break;
+            case Cursor.FIELD_TYPE_BLOB:
+                values.put(ContactQuery.COLUMNS[index], cursor.getBlob(index));
+                break;
+            default:
+                throw new IllegalStateException("Invalid or unhandled data type");
+        }
+    }
 
 }

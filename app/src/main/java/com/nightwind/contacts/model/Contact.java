@@ -1,12 +1,16 @@
 package com.nightwind.contacts.model;
 
+import com.nightwind.contacts.model.dataitem.DataItem;
+
+import java.util.List;
+
 /**
  * Created by nightwind on 15/4/21.
  */
 public class Contact {
     private String name;
     private String photoUri;
-    private String phoneNumber;
+    private List<DataItem> data;
 
     public String getName() {
         return name;
@@ -24,13 +28,11 @@ public class Contact {
         this.photoUri = photoUri;
     }
 
-    public String getPhoneNumber() {
-        return phoneNumber;
+    public List<DataItem> getData() {
+        return data;
     }
 
-    void setPhoneNumber(String phoneNumber) {
-        this.phoneNumber = phoneNumber;
+    void setData(List<DataItem> data) {
+        this.data = data;
     }
-
-
 }
