@@ -23,6 +23,10 @@ public class PhoneDataItem extends DataItem {
 //        return getContentValues().getAsString(ContactsContract.CommonDataKinds.Phone.NORMALIZED_NUMBER);
 //    }
 
+    public int getType() {
+        return getContentValues().getAsInteger(ContactsContract.CommonDataKinds.Phone.TYPE);
+    }
+
     public String getLabel() {
         return getContentValues().getAsString(ContactsContract.CommonDataKinds.Phone.LABEL);
     }

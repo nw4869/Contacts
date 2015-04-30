@@ -27,4 +27,9 @@ public class EmailDataItem extends DataItem {
     public String getLabel() {
         return getContentValues().getAsString(ContactsContract.CommonDataKinds.Email.LABEL);
     }
+
+    public int getType() {
+        return getContentValues().getAsInteger(ContactsContract.CommonDataKinds.Email.TYPE);
+    }
+
 }

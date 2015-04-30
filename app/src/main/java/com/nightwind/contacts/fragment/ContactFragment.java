@@ -4,12 +4,16 @@ import android.app.Activity;
 import android.content.Context;
 import android.net.Uri;
 import android.os.Bundle;
+import android.provider.ContactsContract;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.Loader;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
+import android.view.GestureDetector;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
@@ -34,14 +38,11 @@ import java.util.List;
  * create an instance of this fragment.
  */
 public class ContactFragment extends Fragment {
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_PARAM1 = "param1";
-    private static final String ARG_PARAM2 = "param2";
 
-    // TODO: Rename and change types of parameters
-    private String mParam1;
-    private String mParam2;
+    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
+    private static final String ARG_CONTACT_LOOKUP_URI = "ARG_CONTACT_LOOKUP_URI";
+
+    private String mContactLookupUri;
 
     private OnFragmentInteractionListener mListener;
 
@@ -49,21 +50,20 @@ public class ContactFragment extends Fragment {
     private Contact contact;
 //    private List<DataItem> dataItems = new ArrayList<>();
     private ContactAdapter adapter;
+    private GestureDetector mGestureDetector;
 
     /**
      * Use this factory method to create a new instance of
      * this fragment using the provided parameters.
      *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
+     * @param contactLookupUri Parameter 1.
      * @return A new instance of fragment ContactFragment.
      */
     // TODO: Rename and change types and number of parameters
-    public static ContactFragment newInstance(String param1, String param2) {
+    public static ContactFragment newInstance(String contactLookupUri) {
         ContactFragment fragment = new ContactFragment();
         Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
-        args.putString(ARG_PARAM2, param2);
+        args.putString(ARG_CONTACT_LOOKUP_URI, contactLookupUri);
         fragment.setArguments(args);
         return fragment;
     }
@@ -76,9 +76,9 @@ public class ContactFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
-            mParam2 = getArguments().getString(ARG_PARAM2);
+            mContactLookupUri = getArguments().getString(ARG_CONTACT_LOOKUP_URI);
         }
+
     }
 
     @Override
@@ -91,9 +91,13 @@ public class ContactFragment extends Fragment {
 
         recyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
 
+        contact = new Contact();
+        contact.setData(new ArrayList<DataItem>());
+
         loadContact();
 
-        recyclerView.setAdapter(new ContactAdapter(getActivity(), contact));
+        adapter = new ContactAdapter(getActivity(), contact);
+        recyclerView.setAdapter(adapter);
 
         return view;
     }
@@ -155,9 +159,9 @@ public class ContactFragment extends Fragment {
         @Override
         public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             RecyclerView.ViewHolder viewHolder;
-            if (viewType == VIEW_TYPE_NORMAL) {
+            if (viewType == VIEW_TYPE_PHOTO) {
                 View view = LayoutInflater.from(context).inflate(R.layout.photo_image, parent, false);
-                viewHolder = new DataItemViewHolder(view);
+                viewHolder = new PhotoViewHolder(view);
             } else {
                 View view = LayoutInflater.from(context).inflate(R.layout.item_dataitem, parent, false);
                 viewHolder = new DataItemViewHolder(view);
@@ -180,25 +184,42 @@ public class ContactFragment extends Fragment {
                 PhotoViewHolder viewHolder = (PhotoViewHolder) holder;
                 if (contact.getPhotoUri() != null) {
                     viewHolder.imageView.setImageURI(Uri.parse(contact.getPhotoUri()));
+                    Log.d("ContactFragment" , "loadPhoto = " + contact.getPhotoUri());
+                } else {
+                    Log.d("ContactFragment", "no photo");
                 }
             } else {
                 DataItem dataItem = dataItems.get(position - 1);
                 DataItemViewHolder viewHolder = (DataItemViewHolder) holder;
                 if (dataItem instanceof PhoneDataItem) {
                     PhoneDataItem phoneDataItem = (PhoneDataItem) dataItem;
-                    viewHolder.label.setText(phoneDataItem.getLabel());
+                    String label = phoneDataItem.getLabel();
+                    int type = phoneDataItem.getType();
+                    CharSequence displayLabel = ContactsContract.CommonDataKinds.Phone.getTypeLabel(getResources(), type, label);
+                    viewHolder.label.setText(displayLabel);
                     viewHolder.data.setText(phoneDataItem.getNumber());
+                    viewHolder.typeImage.setImageResource(R.drawable.ic_action_call);
+                    viewHolder.actionImage.setImageResource(R.drawable.ic_action_sms);
+                    viewHolder.actionImage.setVisibility(View.VISIBLE);
                 } else if (dataItem instanceof EmailDataItem) {
                     EmailDataItem emailDataItem = (EmailDataItem) dataItem;
-                    viewHolder.label.setText(emailDataItem.getLabel());
+                    String label = emailDataItem.getLabel();
+                    int type = emailDataItem.getType();
+                    CharSequence displayLabel = ContactsContract.CommonDataKinds.Email.getTypeLabel(getResources(), type, label);
+                    viewHolder.label.setText(displayLabel);
                     viewHolder.data.setText(emailDataItem.getAddress());
+                    viewHolder.typeImage.setImageResource(R.drawable.ic_action_mail);
+                    viewHolder.actionImage.setVisibility(View.GONE);
+                }
+                if (position >= 2 && dataItems.get(position - 2).getMimeType().equals(dataItem.getMimeType())) {
+                    viewHolder.typeImage.setImageDrawable(null);
                 }
             }
         }
 
         @Override
         public int getItemCount() {
-            return dataItems.size();
+            return dataItems.size() + 1;
         }
     }
 
@@ -227,20 +248,31 @@ public class ContactFragment extends Fragment {
         }
     }
 
+    public void onPullDown(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+//        System.out.println("x = " + recyclerView.getX());
+//        System.out.println("y = " + recyclerView.getY());
+//        System.out.println("scroll x = " + recyclerView.getScrollX());
+//        System.out.println("scroll y = " + recyclerView.getScrollY());
+        View topView = recyclerView.getChildAt(0);
+        int lastOffset = topView.getTop();
+        int lastPosition = recyclerView.getLayoutManager().getPosition(topView);
+//        System.out.println("lastOffset = " + lastOffset + " lastPosition = " + lastPosition);
+//        System.out.println("e1.x = " + e1.getX() + " e1.y = " + e1.getY() + " e2.x = " + e2.getX() + " e2.y = " + e2.getY());
+    }
 
     private void loadContact() {
         getLoaderManager().initLoader(0, null, new LoaderManager.LoaderCallbacks<Contact>() {
             @Override
             public Loader<Contact> onCreateLoader(int id, Bundle args) {
-                return new ContactLoader(getActivity());
+                return new ContactLoader(getActivity(), mContactLookupUri);
             }
 
             @Override
             public void onLoadFinished(Loader<Contact> loader, Contact data) {
                 List<DataItem> dataItems = contact.getData();
-//                dataItems.clear();
-//                dataItems.addAll(data.getData());
-                contact.setData(data.getData());
+                dataItems.clear();
+                dataItems.addAll(data.getData());
+//                contact.setData(data.getData());
                 contact.setName(data.getName());
                 contact.setPhotoUri(data.getPhotoUri());
                 refreshData();
@@ -256,4 +288,6 @@ public class ContactFragment extends Fragment {
     private void refreshData() {
         adapter.notifyDataSetChanged();
     }
+
+
 }

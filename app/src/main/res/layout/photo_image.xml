@@ -2,9 +2,9 @@
 <ImageView xmlns:android="http://schemas.android.com/apk/res/android"
 
     android:id="@+id/photo"
-    android:src="@drawable/photo1"
+    android:src="@mipmap/ic_launcher"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
+    android:layout_height="360dp"
     android:scaleType="centerCrop">
 
 </ImageView>

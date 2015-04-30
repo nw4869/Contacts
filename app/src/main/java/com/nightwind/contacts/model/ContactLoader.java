@@ -1,5 +1,7 @@
 package com.nightwind.contacts.model;
 
+import android.content.ContentUris;
+import android.net.Uri;
 import android.support.v4.content.AsyncTaskLoader;
 import android.content.ContentResolver;
 import android.content.ContentValues;
@@ -7,17 +9,21 @@ import android.content.Context;
 import android.database.Cursor;
 import android.provider.ContactsContract;
 import android.provider.ContactsContract.*;
+import android.util.Log;
 
-import com.google.common.collect.ImmutableList;
+import com.nightwind.contacts.model.dataitem.DataItem;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
-* Created by nightwind on 15/4/21.
-*/
+ * Created by nightwind on 15/4/21.
+ */
 public class ContactLoader extends AsyncTaskLoader<Contact> {
 
+
+    private final String contactLookupUri;
+    private String[] selectionArgs = {""};
 
     /**
      * Projection used for the query that loads all data for the entire contact (except for
@@ -30,7 +36,7 @@ public class ContactLoader extends AsyncTaskLoader<Contact> {
                 ContactsContract.Contacts.LOOKUP_KEY,
                 ContactsContract.Contacts.DISPLAY_NAME,
                 ContactsContract.Contacts.DISPLAY_NAME_ALTERNATIVE,
-                ContactsContract.Contacts.PHONETIC_NAME,/**/
+                ContactsContract.Contacts.PHONETIC_NAME,
                 ContactsContract.Contacts.PHOTO_ID,
                 ContactsContract.Contacts.STARRED,
                 ContactsContract.Contacts.CONTACT_PRESENCE,
@@ -96,6 +102,10 @@ public class ContactLoader extends AsyncTaskLoader<Contact> {
                 Data.TIMES_USED,
                 Data.LAST_TIME_USED,
         };
+
+        public static final String SELECTION_LOOKUP = Data.LOOKUP_KEY + " = ?";
+
+        public static final String SORT_ORDER = Data.MIMETYPE + " ASC ";
 
         public static final int NAME_RAW_CONTACT_ID = 0;
         public static final int DISPLAY_NAME_SOURCE = 1;
@@ -169,8 +179,16 @@ public class ContactLoader extends AsyncTaskLoader<Contact> {
         public static final int LAST_TIME_USED = 63;
     }
 
-    public ContactLoader(Context context) {
+    public ContactLoader(Context context, String contactLookupUri) {
         super(context);
+        this.contactLookupUri = contactLookupUri;
+        selectionArgs = new String[] {contactLookupUri};
+    }
+
+    @Override
+    protected void onStartLoading() {
+        super.onStartLoading();
+        forceLoad();
     }
 
     @Override
@@ -193,10 +211,56 @@ public class ContactLoader extends AsyncTaskLoader<Contact> {
 //        }
 //
 //        return contacts.get(0);
+        ContentResolver resolver = getContext().getContentResolver();
+
+//        Uri uri = ContentUris.withAppendedId(ContactsContract.Contacts.CONTENT_LOOKUP_URI, contactLookupUri);
+        String strUri = ContactsContract.Contacts.CONTENT_LOOKUP_URI.toString() + "/" + contactLookupUri +"/entities";
+//        String strUri = "content://com.android.contacts/contacts/lookup/2247i41f325320854105c.2247i3f177fc58fc6ac0c/entities";
+        Uri uri = Uri.parse(strUri);
+
+        Log.d("ContactLoader", "uri = " + uri);
+
+        Cursor cursor = resolver.query(uri /*ContactsContract.Contacts.CONTENT_URI*/, ContactQuery.COLUMNS,
+                ContactQuery.SELECTION_LOOKUP, selectionArgs,
+                ContactQuery.SORT_ORDER);
         Contact contact = new Contact();
-        return null;
+        List<DataItem> dataItems = new ArrayList<>();
+        try {
+            if (cursor.moveToFirst()) {
+                contact = loadContactHeaderData(cursor);
+                ContentValues values;// = loadRawContactValues(cursor);
+                do {
+                    values = loadDataValues(cursor);
+                    String mimeType = values.getAsString(ContactsContract.Contacts.Data.MIMETYPE);
+                    if (mimeType.equals(ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE)
+                            || mimeType.equals(ContactsContract.CommonDataKinds.Email.CONTENT_ITEM_TYPE)) {
+                        DataItem dataItem = DataItem.createFrom(values);
+                        dataItems.add(dataItem);
+                        String data = cursor.getString(ContactQuery.DATA1);
+                        String label = cursor.getString(ContactQuery.DATA3);
+//                        Log.d("ContactLoader", dataItems.size() + " mimeType = " + mimeType + " data = " + data + " label = " + label);
+                    }
+                } while (cursor.moveToNext());
+            }
+        } finally {
+            cursor.close();
+        }
+        contact.setData(dataItems);
+        return contact;
     }
 
+    private Contact loadContactHeaderData(Cursor cursor) {
+        final String lookupUri = cursor.getString(ContactQuery.LOOKUP_KEY);
+        final String photoUri = cursor.getString(ContactQuery.PHOTO_URI);
+        final String name = cursor.getString(ContactQuery.DISPLAY_NAME);
+//        Log.d("ContactLoader", "photoUri = " + photoUri + " name = " + name);
+
+        Contact contact = new Contact();
+        contact.setName(name);
+        contact.setPhotoUri(photoUri);
+        contact.setLookupUri(lookupUri);
+        return contact;
+    }
 
     /**
      * Extracts RawContact level columns from the cursor.
@@ -257,8 +321,8 @@ public class ContactLoader extends AsyncTaskLoader<Contact> {
         cursorColumnToContentValues(cursor, cv, ContactQuery.MIMETYPE);
         cursorColumnToContentValues(cursor, cv, ContactQuery.GROUP_SOURCE_ID);
         cursorColumnToContentValues(cursor, cv, ContactQuery.CHAT_CAPABILITY);
-        cursorColumnToContentValues(cursor, cv, ContactQuery.TIMES_USED);
-        cursorColumnToContentValues(cursor, cv, ContactQuery.LAST_TIME_USED);
+//        cursorColumnToContentValues(cursor, cv, ContactQuery.TIMES_USED);
+//        cursorColumnToContentValues(cursor, cv, ContactQuery.LAST_TIME_USED);
 
         return cv;
     }

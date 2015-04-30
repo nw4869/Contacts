@@ -139,13 +139,14 @@ public class ContactsFragment extends MainToolbarActivity.PlaceholderFragment {
 
         @Override
         public void onBindViewHolder(ContactViewHolder contactViewHolder, int i) {
-            contactViewHolder.bindView(contacts.get(i));
+            final Contact contact = contacts.get(i);
+            contactViewHolder.bindView(contact);
             contactViewHolder.itemView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     getFragmentManager().beginTransaction()
                             .setCustomAnimations(R.anim.slide_in_bottom, R.anim.slide_out_top, R.anim.slide_in_bottom, R.anim.slide_out_top)
-                            .add(R.id.container, ContactFragment.newInstance(null, null))
+                            .add(R.id.container, ContactFragment.newInstance(contact.getLookupUri()), ContactFragment.class.getSimpleName())
                             .addToBackStack(null)
                             .commit();
                 }

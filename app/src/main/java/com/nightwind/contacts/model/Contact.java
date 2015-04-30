@@ -10,6 +10,7 @@ import java.util.List;
 public class Contact {
     private String name;
     private String photoUri;
+    private String lookupUri;
     private List<DataItem> data;
 
     public String getName() {
@@ -34,5 +35,13 @@ public class Contact {
 
     public void setData(List<DataItem> data) {
         this.data = data;
+    }
+
+    public String getLookupUri() {
+        return lookupUri;
+    }
+
+    public void setLookupUri(String lookupUri) {
+        this.lookupUri = lookupUri;
     }
 }

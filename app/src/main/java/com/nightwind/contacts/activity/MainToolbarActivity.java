@@ -5,24 +5,28 @@ import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
-import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.TypedValue;
+import android.view.GestureDetector;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 
 import com.nightwind.contacts.R;
+import com.nightwind.contacts.fragment.ContactFragment;
 import com.nightwind.contacts.fragment.ContactsFragment;
 import com.nightwind.contacts.widget.PagerSlidingTabStrip;
 
 import java.util.Locale;
 
 public class MainToolbarActivity extends AppCompatActivity {
+
+    private GestureDetector mGestureDetector;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,7 +42,34 @@ public class MainToolbarActivity extends AppCompatActivity {
         pagerSlidingTabStrip.setViewPager(viewPager);
 
         initTabsValue(pagerSlidingTabStrip);
+
+
+        mGestureDetector = new GestureDetector(this, new GestureDetector.SimpleOnGestureListener() {
+
+            protected final int verticalMinDistance = 50;
+            protected final int minVelocity = 0;
+            private float horizonMinDistance = 10;
+
+            @Override
+            public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+                float absDx = Math.abs(e2.getX() - e1.getX());
+                float absDy = Math.abs(e2.getY() - e1.getY());
+
+                if (absDy > 1.5*absDx && e2.getY() - e1.getY() > horizonMinDistance && Math.abs(velocityY) > minVelocity) {
+                    //下拉
+                    ContactFragment fragment = (ContactFragment) getSupportFragmentManager().findFragmentByTag(ContactFragment.class.getSimpleName());
+                    if (fragment != null) {
+                        fragment.onPullDown(e1, e2, velocityX, velocityY);
+
+                    }
+                }
+
+                return super.onFling(e1, e2, velocityX, velocityY);
+            }
+
+        });
     }
+
 
     /**
      * pagerSlidingTabStrip tab配置
@@ -172,5 +203,17 @@ public class MainToolbarActivity extends AppCompatActivity {
             View rootView = inflater.inflate(R.layout.fragment_main_tabbed, container, false);
             return rootView;
         }
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+//        return super.onTouchEvent(event);
+        return mGestureDetector.onTouchEvent(event);
+    }
+
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent ev) {
+        mGestureDetector.onTouchEvent(ev);
+        return super.dispatchTouchEvent(ev);
     }
 }

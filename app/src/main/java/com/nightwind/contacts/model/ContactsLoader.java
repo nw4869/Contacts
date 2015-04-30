@@ -58,17 +58,19 @@ public class ContactsLoader extends AsyncTaskLoader<List<Contact>> {
             }
 
             do {
-                int id = cursor.getInt(ContactsLoader.CONTACT_ID);
-                String name = cursor.getString(ContactsLoader.DISPLAY_NAME);
-                int starred = cursor.getInt(ContactsLoader.STARRED);
-                String photoUri = cursor.getString(ContactsLoader.PHOTO_URI);
+                int id = cursor.getInt(CONTACT_ID);
+                String name = cursor.getString(DISPLAY_NAME);
+                int starred = cursor.getInt(STARRED);
+                String lookupUri = cursor.getString(LOOKUP_KEY);
+                String photoUri = cursor.getString(PHOTO_URI);
 //                String photoThumbUri = cursor.getString(ContactsLoader.PHOTO_THUMBNAIL_URI);
                 String photoThumbUri = null;
-                Log.d("ContactFragment", "id = " + id + " name = " + name + " starred = " + starred + " photoUri = " + photoUri + " photoThumbUri = " + photoThumbUri);
+//                Log.d("ContactFragment", "id = " + id + " name = " + name + " starred = " + starred + " photoUri = " + photoUri + " photoThumbUri = " + photoThumbUri);
 
                 Contact contact = new Contact();
                 contact.setName(name);
                 contact.setPhotoUri(photoUri);
+                contact.setLookupUri(lookupUri);
                 contacts.add(contact);
             } while (cursor.moveToNext());
         } finally {
