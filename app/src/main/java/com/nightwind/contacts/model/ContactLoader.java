@@ -31,7 +31,8 @@ public class ContactLoader extends AsyncTaskLoader<Contact> {
      */
     private static class ContactQuery {
         static final String[] COLUMNS = new String[] {
-                ContactsContract.Contacts.NAME_RAW_CONTACT_ID,
+//                ContactsContract.Contacts.NAME_RAW_CONTACT_ID,
+                ContactsContract.Contacts.DISPLAY_NAME_SOURCE,
                 ContactsContract.Contacts.DISPLAY_NAME_SOURCE,
                 ContactsContract.Contacts.LOOKUP_KEY,
                 ContactsContract.Contacts.DISPLAY_NAME,
@@ -49,7 +50,8 @@ public class ContactLoader extends AsyncTaskLoader<Contact> {
 
                 RawContacts.ACCOUNT_NAME,
                 RawContacts.ACCOUNT_TYPE,
-                RawContacts.DATA_SET,
+//                RawContacts.DATA_SET,
+                RawContacts.DIRTY,
                 RawContacts.DIRTY,
                 RawContacts.VERSION,
                 RawContacts.SOURCE_ID,
@@ -97,10 +99,10 @@ public class ContactLoader extends AsyncTaskLoader<Contact> {
                 ContactsContract.Contacts.PHOTO_URI,
                 ContactsContract.Contacts.SEND_TO_VOICEMAIL,
                 ContactsContract.Contacts.CUSTOM_RINGTONE,
-                ContactsContract.Contacts.IS_USER_PROFILE,
-
-                Data.TIMES_USED,
-                Data.LAST_TIME_USED,
+//                ContactsContract.Contacts.IS_USER_PROFILE,
+//
+//                Data.TIMES_USED,
+//                Data.LAST_TIME_USED,
         };
 
         public static final String SELECTION_LOOKUP = Data.LOOKUP_KEY + " = ?";
