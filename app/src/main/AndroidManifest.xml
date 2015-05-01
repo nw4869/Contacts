@@ -15,10 +15,6 @@
             android:label="@string/title_activity_main" >
         </activity>
         <activity
-            android:name=".activity.MainTabbedActivity"
-            android:label="@string/title_activity_main_tabbed" >
-        </activity>
-        <activity
             android:name=".activity.MainToolbarActivity"
             android:label="@string/title_activity_main_toolbar" >
             <intent-filter>

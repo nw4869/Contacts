@@ -17,7 +17,6 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.nightwind.contacts.R;
-import com.nightwind.contacts.activity.MainTabbedActivity;
 import com.nightwind.contacts.activity.MainToolbarActivity;
 import com.nightwind.contacts.model.Contact;
 import com.nightwind.contacts.model.ContactsLoader;
