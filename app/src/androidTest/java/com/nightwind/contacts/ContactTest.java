@@ -17,7 +17,7 @@ import com.nightwind.contacts.model.dataitem.PhoneDataItem;
 
 import java.util.ArrayList;
 import java.util.List;
-
+   
 /**
  * Created by nightwind on 15/4/23.
  */
