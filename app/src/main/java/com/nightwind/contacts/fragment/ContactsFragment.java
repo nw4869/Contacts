@@ -1,7 +1,6 @@
 package com.nightwind.contacts.fragment;
 
 
-import android.content.Intent;
 import android.net.Uri;
 import android.support.v4.app.LoaderManager;
 import android.content.Context;
@@ -168,7 +167,7 @@ public class ContactsFragment extends MainToolbarActivity.PlaceholderFragment {
 
         public ContactViewHolder(View itemView) {
             super(itemView);
-            name = (TextView) itemView.findViewById(R.id.name);
+            name = (TextView) itemView.findViewById(R.id.data);
             photo = (ImageView) itemView.findViewById(R.id.photo);
         }
 

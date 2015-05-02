@@ -19,4 +19,9 @@
     <string name="title_activity_main_tabbed">Contacts</string>
     <string name="action_test">test</string>
     <string name="title_activity_main_toolbar">Contacts</string>
+    <string name="name">姓名</string>
+    <string name="phone">电话</string>
+    <string name="person_add">新增联系人</string>
+    <string name="person_edit">修改联系人</string>
+    <string name="title_activity_person_add">新增联系人</string>
 </resources>
