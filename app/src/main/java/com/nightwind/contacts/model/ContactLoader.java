@@ -164,7 +164,7 @@ public class ContactLoader extends AsyncTaskLoader<Contact> {
 
         public static final int GROUP_SOURCE_ID = 50;
 
-        public static final int PRESENCE = 51;
+        public static final int PRESENCE = 51;//
         public static final int CHAT_CAPABILITY = 52;
         public static final int STATUS = 53;
         public static final int STATUS_RES_PACKAGE = 54;

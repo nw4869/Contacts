@@ -23,6 +23,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.nightwind.contacts.R;
+import com.nightwind.contacts.fragment.ContactEditorFragment;
 import com.nightwind.contacts.fragment.ContactFragment;
 import com.nightwind.contacts.fragment.ContactsFragment;
 import com.nightwind.contacts.fragment.NavigationDrawerFragment;
@@ -41,6 +42,20 @@ public class MainToolbarActivity extends AppCompatActivity {
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+        findViewById(R.id.person_add).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+//                getSupportFragmentManager().beginTransaction()
+//                        .add(R.id.container, ContactEditorFragment.newInstance(null))
+//                        .addToBackStack(ContactEditorFragment.class.getSimpleName())
+//                        .commit();
+//                getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+//                getSupportActionBar().setHomeButtonEnabled(true);
+                Intent intent = new Intent(MainToolbarActivity.this, PersonAddActivity.class);
+                startActivity(intent);
+            }
+        });
 
         PagerSlidingTabStrip pagerSlidingTabStrip = (PagerSlidingTabStrip) findViewById(R.id.tabs);
         ViewPager viewPager = (ViewPager) findViewById(R.id.pager);
@@ -126,6 +141,9 @@ public class MainToolbarActivity extends AppCompatActivity {
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
             return true;
+        } else if (id == R.id.home) {
+//            getSupportActionBar().setDisplayHomeAsUpEnabled(false);
+//            getSupportActionBar().setHomeButtonEnabled(false);
         }
 
         return super.onOptionsItemSelected(item);
@@ -304,10 +322,6 @@ public class MainToolbarActivity extends AppCompatActivity {
 
             //noinspection SimplifiableIfStatement
             if (id == R.id.action_settings) {
-                return true;
-            } else if (id == R.id.action_test) {
-                Intent intent = new Intent(this, MainTabbedActivity.class);
-                startActivity(intent);
                 return true;
             }
 
