@@ -14,6 +14,10 @@ public class DataItem {
         this.mContentValues = values;
     }
 
+    private DataItem() {
+        mContentValues = null;
+    }
+
     public ContentValues getContentValues() {
         return mContentValues;
     }
@@ -50,5 +54,7 @@ public class DataItem {
     public void setMimeType(String mimeType) {
         mContentValues.put(ContactsContract.Contacts.Data.MIMETYPE, mimeType);
     }
+
+    public static DataItem EMPTY_DATA_ITEM = new DataItem();
 
 }
