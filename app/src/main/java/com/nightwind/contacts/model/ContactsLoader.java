@@ -23,7 +23,9 @@ public class ContactsLoader extends AsyncTaskLoader<List<Contact>> {
     public final static int LOOKUP_KEY = 4;
     public final static int CONTACT_PRESENCE = 5;
     public final static int CONTACT_STATUS = 6;
-//    public final static int PHOTO_THUMBNAIL_URI = 7;
+    public final static int PHOTO_THUMBNAIL_URI = 7;
+    public final static int SORT_KEY_PRIMARY = 8;
+
 
     private static final String[] COLUMNS = new String[] {
             ContactsContract.Contacts._ID, // ..........................................0
@@ -33,8 +35,8 @@ public class ContactsLoader extends AsyncTaskLoader<List<Contact>> {
             ContactsContract.Contacts.LOOKUP_KEY, // ...................................4
             ContactsContract.Contacts.CONTACT_PRESENCE, // .............................5
             ContactsContract.Contacts.CONTACT_STATUS, // ...............................6
-//            ContactsContract.Contacts.PHOTO_THUMBNAIL_URI, // ..........................7
-            ContactsContract.Contacts.SORT_KEY_PRIMARY
+            ContactsContract.Contacts.PHOTO_THUMBNAIL_URI, // ..........................7
+            ContactsContract.Contacts.SORT_KEY_PRIMARY,//...............................8
     };
 
     public ContactsLoader(Context context) {

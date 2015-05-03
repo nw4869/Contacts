@@ -7,6 +7,8 @@ import android.content.OperationApplicationException;
 import android.os.Bundle;
 import android.os.RemoteException;
 import android.provider.ContactsContract;
+import android.support.v4.app.LoaderManager;
+import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -27,6 +29,7 @@ import android.widget.Spinner;
 
 import com.nightwind.contacts.R;
 import com.nightwind.contacts.model.Contact;
+import com.nightwind.contacts.model.ContactLoader;
 import com.nightwind.contacts.model.Contacts;
 import com.nightwind.contacts.model.dataitem.DataItem;
 import com.nightwind.contacts.model.dataitem.EmailDataItem;
@@ -35,16 +38,11 @@ import com.nightwind.contacts.widget.FullyLinearLayoutManager;
 
 import java.util.ArrayList;
 import java.util.List;
-import android.os.Bundle;
+
 import android.support.v4.app.Fragment;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
 import android.provider.ContactsContract.CommonDataKinds.Phone;
 import android.provider.ContactsContract.CommonDataKinds.Email;
 import android.widget.Toast;
-
-import com.nightwind.contacts.R;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -109,7 +107,9 @@ public class ContactEditorFragment extends Fragment {
         contact = new Contact();
         contact.setData(new ArrayList<DataItem>());
 
-        loadContact();
+        if (mContactLookupUri != null) {
+            loadContact();
+        }
 
         adapter = new ContactEditorAdapter(getActivity(), contact);
         recyclerView.setAdapter(adapter);
@@ -120,7 +120,30 @@ public class ContactEditorFragment extends Fragment {
 
     private void loadContact() {
 
+        getLoaderManager().initLoader(0, null, new LoaderManager.LoaderCallbacks<Contact>() {
+            @Override
+            public Loader<Contact> onCreateLoader(int id, Bundle args) {
+                return new ContactLoader(getActivity(), mContactLookupUri);
+            }
+
+            @Override
+            public void onLoadFinished(Loader<Contact> loader, Contact data) {
+                List<DataItem> dataItems = contact.getData();
+                dataItems.clear();
+                dataItems.addAll(data.getData());
+//                contact.setData(data.getData());
+                contact.setName(data.getName());
+                contact.setPhotoUri(data.getPhotoUri());
+                ((ContactEditorAdapter)adapter).refreshData();
+            }
+
+            @Override
+            public void onLoaderReset(Loader<Contact> loader) {
+
+            }
+        });
     }
+
 
     class DataItemEntity {
         public String data;
@@ -143,15 +166,22 @@ public class ContactEditorFragment extends Fragment {
             this.context = context;
             this.contact = contact;
             List<DataItem> dataItems = contact.getData();
+            loadEntitiesFromDataItems(dataItems);
+        }
+
+        public void loadEntitiesFromDataItems(List<DataItem> dataItems) {
+
+            phoneItems.clear();
+            emailItems.clear();
             for (DataItem dataItem: dataItems) {
-                if (dataItem.getMimeType().equals(ContactsContract.CommonDataKinds.Phone.MIMETYPE)) {
+                if (dataItem.getMimeType().equals(Phone.CONTENT_ITEM_TYPE)) {
 //                    phoneItems.add(dataItem);
                     DataItemEntity item = new DataItemEntity();
                     item.data = ((PhoneDataItem)dataItem).getNumber();
                     item.label = ((PhoneDataItem)dataItem).getLabel();
                     item.labelType = ((PhoneDataItem)dataItem).getType();
                     phoneItems.add(item);
-                } else if (dataItem.getMimeType().equals(ContactsContract.CommonDataKinds.Email.MIMETYPE)) {
+                } else if (dataItem.getMimeType().equals(Email.CONTENT_ITEM_TYPE)) {
 //                    emailItems.add(dataItem);
                     DataItemEntity item = new DataItemEntity();
                     item.data = ((EmailDataItem)dataItem).getAddress();
@@ -162,7 +192,6 @@ public class ContactEditorFragment extends Fragment {
             }
             phoneItems.add(new DataItemEntity());
             emailItems.add(new DataItemEntity());
-
         }
 
         @Override
@@ -240,6 +269,14 @@ public class ContactEditorFragment extends Fragment {
         public int getItemCount() {
             // 现只有name，phone，email
             return 3;
+        }
+
+
+        public void refreshData() {
+
+            List<DataItem> dataItems = contact.getData();
+            loadEntitiesFromDataItems(dataItems);
+            notifyDataSetChanged();
         }
 
         private class recyclerEditorAdapter extends RecyclerView.Adapter {
@@ -400,31 +437,37 @@ public class ContactEditorFragment extends Fragment {
     }
 
     private void saveContact() throws RemoteException, OperationApplicationException {
-        List<DataItem> dataItems = new ArrayList<>();
-        for (DataItemEntity item: phoneItems) {
-            if (TextUtils.isEmpty(item.data)) {
-                continue;
+
+        if (mContactLookupUri != null) {
+            new Contacts(getActivity()).updateContact(contact);
+        } else {
+            List<DataItem> dataItems = new ArrayList<>();
+            for (DataItemEntity item: phoneItems) {
+                if (TextUtils.isEmpty(item.data)) {
+                    continue;
+                }
+                ContentValues cv = new ContentValues();
+                cv.put(ContactsContract.Contacts.Data.MIMETYPE, Phone.CONTENT_ITEM_TYPE);
+                cv.put(Phone.NUMBER, item.data);
+                cv.put(Phone.TYPE, item.labelType);
+                cv.put(Phone.LABEL, item.label);
+                dataItems.add(DataItem.createFrom(cv));
             }
-            ContentValues cv = new ContentValues();
-            cv.put(ContactsContract.Contacts.Data.MIMETYPE, Phone.CONTENT_ITEM_TYPE);
-            cv.put(Phone.NUMBER, item.data);
-            cv.put(Phone.TYPE, item.labelType);
-            cv.put(Phone.LABEL, item.label);
-            dataItems.add(DataItem.createFrom(cv));
+
+            for (DataItemEntity item: emailItems) {
+                if (TextUtils.isEmpty(item.data)) {
+                    continue;
+                }
+                ContentValues cv = new ContentValues();
+                cv.put(ContactsContract.Contacts.Data.MIMETYPE, Email.CONTENT_ITEM_TYPE);
+                cv.put(Email.ADDRESS, item.data);
+                cv.put(Phone.TYPE, item.labelType);
+                cv.put(Phone.LABEL, item.label);
+                dataItems.add(DataItem.createFrom(cv));
+            }
+
+            new Contacts(getActivity()).saveContact(contact.getName(), null, dataItems);
         }
 
-        for (DataItemEntity item: emailItems) {
-            if (TextUtils.isEmpty(item.data)) {
-                continue;
-            }
-            ContentValues cv = new ContentValues();
-            cv.put(ContactsContract.Contacts.Data.MIMETYPE, Email.CONTENT_ITEM_TYPE);
-            cv.put(Email.ADDRESS, item.data);
-            cv.put(Phone.TYPE, item.labelType);
-            cv.put(Phone.LABEL, item.label);
-            dataItems.add(DataItem.createFrom(cv));
-        }
-
-        new Contacts(getActivity()).saveContact(contact.getName(), null, dataItems);
     }
 }

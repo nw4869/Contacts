@@ -27,5 +27,6 @@
     <string name="save">保存</string>
     <string name="save_failed">保存失败</string>
     <string name="save_success">保存成功</string>
+    <string name="title_activity_contact">ContactActivity</string>
 
 </resources>

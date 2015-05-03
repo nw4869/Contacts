@@ -2,6 +2,7 @@ package com.nightwind.contacts.fragment;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.ContactsContract;
@@ -192,7 +193,7 @@ public class ContactFragment extends Fragment {
                 DataItem dataItem = dataItems.get(position - 1);
                 DataItemViewHolder viewHolder = (DataItemViewHolder) holder;
                 if (dataItem instanceof PhoneDataItem) {
-                    PhoneDataItem phoneDataItem = (PhoneDataItem) dataItem;
+                    final PhoneDataItem phoneDataItem = (PhoneDataItem) dataItem;
                     String label = phoneDataItem.getLabel();
                     int type = phoneDataItem.getType();
                     CharSequence displayLabel = ContactsContract.CommonDataKinds.Phone.getTypeLabel(getResources(), type, label);
@@ -201,8 +202,24 @@ public class ContactFragment extends Fragment {
                     viewHolder.typeImage.setImageResource(R.drawable.ic_action_call);
                     viewHolder.actionImage.setImageResource(R.drawable.ic_action_sms);
                     viewHolder.actionImage.setVisibility(View.VISIBLE);
+                    viewHolder.actionImage.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            Uri uri = Uri.parse("smsto:" + phoneDataItem.getNumber());
+                            Intent it = new Intent(Intent.ACTION_SENDTO, uri);
+//                            it.putExtra("sms_body", "TheSMS text");
+                            startActivity(it);
+                        }
+                    });
+                    viewHolder.itemView.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            Intent intent = new Intent(Intent.ACTION_CALL,Uri.parse("tel:"+phoneDataItem.getNumber()));
+                            startActivity(intent);
+                        }
+                    });
                 } else if (dataItem instanceof EmailDataItem) {
-                    EmailDataItem emailDataItem = (EmailDataItem) dataItem;
+                    final EmailDataItem emailDataItem = (EmailDataItem) dataItem;
                     String label = emailDataItem.getLabel();
                     int type = emailDataItem.getType();
                     CharSequence displayLabel = ContactsContract.CommonDataKinds.Email.getTypeLabel(getResources(), type, label);
@@ -210,6 +227,15 @@ public class ContactFragment extends Fragment {
                     viewHolder.data.setText(emailDataItem.getAddress());
                     viewHolder.typeImage.setImageResource(R.drawable.ic_action_mail);
                     viewHolder.actionImage.setVisibility(View.GONE);
+                    viewHolder.itemView.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            Intent intent=new Intent(Intent.ACTION_SEND);   //发送邮件使用ACTION_SEND
+                            intent.setType("plain/text");                   //设置类型
+                            intent.putExtra(Intent.EXTRA_EMAIL, emailDataItem.getAddress());
+                            startActivity(intent);
+                        }
+                    });
                 }
                 if (position >= 2 && dataItems.get(position - 2).getMimeType().equals(dataItem.getMimeType())) {
                     viewHolder.typeImage.setImageDrawable(null);

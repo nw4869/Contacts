@@ -2,8 +2,11 @@ package com.nightwind.contacts.model;
 
 import android.content.ContentProviderOperation;
 import android.content.ContentProviderResult;
+import android.content.ContentResolver;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.OperationApplicationException;
+import android.net.Uri;
 import android.os.RemoteException;
 import android.provider.ContactsContract;
 import android.util.Log;
@@ -67,5 +70,61 @@ public class Contacts {
             Log.i(TAG, result.uri.toString());
         }
 
+    }
+
+    public void deleteContact(String lookupKey) {
+        ContentValues values = new ContentValues();
+        values.put(ContactsContract.RawContacts.DELETED, 1);
+        ContentResolver resolver = context.getContentResolver();
+//        resolver.update(ContactsContract.RawContacts.CONTENT_URI, values,
+//                ContactsContract.RawContacts. + "")
+    }
+
+    public void updateContact(Contact contact) throws RemoteException, OperationApplicationException {
+
+        ArrayList<ContentProviderOperation> ops = new ArrayList<ContentProviderOperation>();
+
+
+        ops.add(ContentProviderOperation.newUpdate(ContactsContract.Data.CONTENT_URI)
+                .withSelection(ContactsContract.Contacts.LOOKUP_KEY + " = ?",
+                        new String[]{contact.getLookupUri()})
+                .withValue(ContactsContract.RawContacts.Data.MIMETYPE, ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE)
+                .build());
+
+        for (DataItem dataItem: contact.getData()) {
+
+            if (dataItem.getMimeType().equals(ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE)) {
+                PhoneDataItem phoneDataItem = (PhoneDataItem) dataItem;
+                ops.add(ContentProviderOperation.newUpdate(ContactsContract.Data.CONTENT_URI)
+                                .withSelection(ContactsContract.Contacts.LOOKUP_KEY + " = ? AND " +
+                                                ContactsContract.RawContacts.Data.MIMETYPE + " = ? ",
+                                        new String[]{contact.getLookupUri(), dataItem.getMimeType()})
+                                .withValue(ContactsContract.CommonDataKinds.Phone.NUMBER, phoneDataItem.getNumber())
+                                .withValue(ContactsContract.CommonDataKinds.Phone.TYPE, ContactsContract.CommonDataKinds.Phone.TYPE_MOBILE)
+                                .withValue(ContactsContract.CommonDataKinds.Phone.LABEL, phoneDataItem.getLabel())
+                                .build()
+                );
+
+            } else if (dataItem.getMimeType().equals(ContactsContract.CommonDataKinds.Email.CONTENT_ITEM_TYPE)) {
+                EmailDataItem emailDataItem = (EmailDataItem) dataItem;
+
+                ops.add(ContentProviderOperation.newUpdate(ContactsContract.Data.CONTENT_URI)
+                                .withSelection(ContactsContract.Contacts.LOOKUP_KEY + " = ? AND " +
+                                                ContactsContract.RawContacts.Data.MIMETYPE + " = ? ",
+                                        new String[]{contact.getLookupUri(), dataItem.getMimeType()})
+                                .withValue(ContactsContract.CommonDataKinds.Email.DATA, emailDataItem.getAddress())
+                                .withValue(ContactsContract.CommonDataKinds.Email.TYPE, ContactsContract.CommonDataKinds.Email.TYPE_WORK)
+                                .withValue(ContactsContract.CommonDataKinds.Email.LABEL, emailDataItem.getLabel())
+                                .build()
+                );
+            }
+        }
+
+        ContentProviderResult[] results = context.getContentResolver()
+                .applyBatch(ContactsContract.AUTHORITY, ops);
+        for(ContentProviderResult result : results)
+        {
+            Log.i(TAG, result.uri.toString());
+        }
     }
 }

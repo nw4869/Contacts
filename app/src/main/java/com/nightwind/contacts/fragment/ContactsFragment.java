@@ -1,12 +1,16 @@
 package com.nightwind.contacts.fragment;
 
 
+import android.app.Dialog;
+import android.content.DialogInterface;
+import android.content.Intent;
 import android.net.Uri;
 import android.support.v4.app.LoaderManager;
 import android.content.Context;
 import android.os.Bundle;
 import android.app.Fragment;
 import android.support.v4.content.Loader;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -16,7 +20,9 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.nightwind.contacts.R;
+import com.nightwind.contacts.activity.ContactActivity;
 import com.nightwind.contacts.activity.MainToolbarActivity;
+import com.nightwind.contacts.activity.PersonAddActivity;
 import com.nightwind.contacts.model.Contact;
 import com.nightwind.contacts.model.ContactsLoader;
 
@@ -142,11 +148,33 @@ public class ContactsFragment extends MainToolbarActivity.PlaceholderFragment {
             contactViewHolder.itemView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    getFragmentManager().beginTransaction()
-                            .setCustomAnimations(R.anim.slide_in_bottom, R.anim.slide_out_top, R.anim.slide_in_bottom, R.anim.slide_out_top)
-                            .add(R.id.container, ContactFragment.newInstance(contact.getLookupUri()), ContactFragment.class.getSimpleName())
-                            .addToBackStack(null)
-                            .commit();
+//                    getFragmentManager().beginTransaction()
+//                            .setCustomAnimations(R.anim.slide_in_bottom, R.anim.slide_out_top, R.anim.slide_in_bottom, R.anim.slide_out_top)
+//                            .add(R.id.container, ContactFragment.newInstance(contact.getLookupUri()), ContactFragment.class.getSimpleName())
+//                            .addToBackStack(null)
+//                            .commit();
+                    Intent intent = new Intent(getActivity(), ContactActivity.class);
+                    intent.putExtra(ContactActivity.ARG_CONTACT_LOOKUP_URI, contact.getLookupUri());
+                    startActivity(intent);
+                    getActivity().overridePendingTransition(R.anim.slide_in_bottom, 0);
+                }
+            });
+            contactViewHolder.itemView.setOnLongClickListener(new View.OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View v) {
+                    Dialog dialog = new AlertDialog.Builder(getActivity()).setMessage(R.string.person_edit)
+                            .setNegativeButton("取消", null)
+                            .setPositiveButton("修改", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    Intent intent = new Intent(getActivity(), PersonAddActivity.class);
+                                    intent.putExtra(PersonAddActivity.ARG_CONTACT_LOOKUP_URI,
+                                            contact.getLookupUri());
+                                    startActivity(intent);
+                                }
+                            }).create();
+                    dialog.show();
+                    return true;
                 }
             });
         }
