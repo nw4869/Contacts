@@ -1,14 +1,25 @@
+<<<<<<< HEAD
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+=======
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+>>>>>>> 91c3acf41f95123cd4c673f3d8923acdc69653b8
     xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context="com.nightwind.contacts.fragment.ContactEditorFragment">
 
     <android.support.v7.widget.RecyclerView
+<<<<<<< HEAD
         android:layout_below="@id/toolbar"
+=======
+>>>>>>> 91c3acf41f95123cd4c673f3d8923acdc69653b8
         android:id="@+id/recyclerView"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
     </android.support.v7.widget.RecyclerView>
 
 
+<<<<<<< HEAD
 </RelativeLayout>
+=======
+</FrameLayout>
+>>>>>>> 91c3acf41f95123cd4c673f3d8923acdc69653b8
