@@ -28,6 +28,7 @@ import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.provider.ContactsContract.CommonDataKinds.Phone;
 
 import com.nightwind.contacts.R;
 
@@ -222,7 +223,9 @@ public class ContactEditorFragment extends Fragment {
                 List<String> spinnerList = new ArrayList<>();
                 spinnerList.add("hello");
                 spinnerList.add("world");
-                viewHolder.spinner.setAdapter(new ArrayAdapter<>(context, android.R.layout.simple_spinner_item, spinnerList));
+
+                getResources().getString(Phone.getTypeLabelResource(Phone.TYPE_HOME));
+                viewHolder.spinner.setAdapter(new ArrayAdapter<>(context, R.layout.item_spinner_text, spinnerList));
             }
 
             @Override

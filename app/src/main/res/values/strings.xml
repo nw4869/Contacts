@@ -24,4 +24,5 @@
     <string name="person_add">新增联系人</string>
     <string name="person_edit">修改联系人</string>
     <string name="title_activity_person_add">新增联系人</string>
+
 </resources>
