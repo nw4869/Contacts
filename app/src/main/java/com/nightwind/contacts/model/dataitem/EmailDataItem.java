@@ -1,6 +1,7 @@
 package com.nightwind.contacts.model.dataitem;
 
 import android.content.ContentValues;
+import android.content.res.Resources;
 import android.provider.ContactsContract;
 
 /**
@@ -30,6 +31,11 @@ public class EmailDataItem extends DataItem {
 
     public int getType() {
         return getContentValues().getAsInteger(ContactsContract.CommonDataKinds.Email.TYPE);
+    }
+
+
+    public CharSequence getDisplayLabel(Resources res) {
+        return ContactsContract.CommonDataKinds.Email.getTypeLabel(res, getType(), getLabel());
     }
 
 }

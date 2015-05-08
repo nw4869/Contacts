@@ -13,10 +13,6 @@
         android:label="@string/app_name"
         android:theme="@style/ToolbarAppTheme" >
         <activity
-            android:name=".activity.MainToolbarActivity$MainActivity"
-            android:label="@string/title_activity_main" >
-        </activity>
-        <activity
             android:name=".activity.MainToolbarActivity"
             android:label="@string/title_activity_main_toolbar" >
             <intent-filter>

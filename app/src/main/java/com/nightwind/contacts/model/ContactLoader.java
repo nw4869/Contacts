@@ -252,12 +252,16 @@ public class ContactLoader extends AsyncTaskLoader<Contact> {
     }
 
     private Contact loadContactHeaderData(Cursor cursor) {
+        final long id = cursor.getLong(ContactQuery.CONTACT_ID);
+        final long rawContactId = cursor.getLong(ContactQuery.RAW_CONTACT_ID);
         final String lookupUri = cursor.getString(ContactQuery.LOOKUP_KEY);
         final String photoUri = cursor.getString(ContactQuery.PHOTO_URI);
         final String name = cursor.getString(ContactQuery.DISPLAY_NAME);
 //        Log.d("ContactLoader", "photoUri = " + photoUri + " name = " + name);
 
         Contact contact = new Contact();
+        contact.setId(id);
+        contact.setRawContactId(rawContactId);
         contact.setName(name);
         contact.setPhotoUri(photoUri);
         contact.setLookupUri(lookupUri);
@@ -296,7 +300,9 @@ public class ContactLoader extends AsyncTaskLoader<Contact> {
     private ContentValues loadDataValues(Cursor cursor) {
         ContentValues cv = new ContentValues();
 
-        cv.put(Data._ID, cursor.getLong(ContactQuery.DATA_ID));
+        long id = cursor.getLong(ContactQuery.DATA_ID);
+//        Log.d("contactLoader", "id = " + id);
+        cv.put(Data._ID, id);
 
         cursorColumnToContentValues(cursor, cv, ContactQuery.DATA1);
         cursorColumnToContentValues(cursor, cv, ContactQuery.DATA2);

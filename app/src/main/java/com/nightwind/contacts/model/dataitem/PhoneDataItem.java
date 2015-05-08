@@ -1,6 +1,7 @@
 package com.nightwind.contacts.model.dataitem;
 
 import android.content.ContentValues;
+import android.content.res.Resources;
 import android.provider.ContactsContract;
 
 /**
@@ -31,5 +32,8 @@ public class PhoneDataItem extends DataItem {
         return getContentValues().getAsString(ContactsContract.CommonDataKinds.Phone.LABEL);
     }
 
+    public CharSequence getDisplayLabel(Resources res) {
+        return ContactsContract.CommonDataKinds.Phone.getTypeLabel(res, getType(), getLabel());
+    }
 
 }

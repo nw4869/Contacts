@@ -8,6 +8,8 @@ import java.util.List;
  * Created by nightwind on 15/4/21.
  */
 public class Contact {
+    private long id;
+    private long rawContactId;
     private String name;
     private String photoUri;
     private String lookupUri;
@@ -43,5 +45,21 @@ public class Contact {
 
     public void setLookupUri(String lookupUri) {
         this.lookupUri = lookupUri;
+    }
+
+    public long getId() {
+        return id;
+    }
+
+    public void setId(long id) {
+        this.id = id;
+    }
+
+    public long getRawContactId() {
+        return rawContactId;
+    }
+
+    public void setRawContactId(long rawContactId) {
+        this.rawContactId = rawContactId;
     }
 }

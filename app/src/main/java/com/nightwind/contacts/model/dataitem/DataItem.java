@@ -1,6 +1,7 @@
 package com.nightwind.contacts.model.dataitem;
 
 import android.content.ContentValues;
+import android.content.res.Resources;
 import android.provider.ContactsContract;
 
 /**
@@ -57,4 +58,35 @@ public class DataItem {
 
     public static DataItem EMPTY_DATA_ITEM = new DataItem();
 
+    public CharSequence getDisplayLabel(Resources res) {
+        return mContentValues.getAsString(ContactsContract.Data.DATA3);
+    }
+
+    public String getLabel() {
+        return mContentValues.getAsString(ContactsContract.Data.DATA3);
+    }
+
+    public void setLabel(String label) {
+        mContentValues.put(ContactsContract.Data.DATA3, label);
+    }
+
+    public int getType() {
+        return mContentValues.getAsInteger(ContactsContract.Data.DATA2);
+    }
+
+    public void setType(String type) {
+        mContentValues.put(ContactsContract.Data.DATA2, type);
+    }
+
+    public String getData() {
+        return mContentValues.getAsString(ContactsContract.Data.DATA1);
+    }
+
+    public void setData(String data) {
+        mContentValues.put(ContactsContract.Data.DATA1, data);
+    }
+
+    public long getId() {
+        return mContentValues.getAsLong(ContactsContract.Contacts.Data._ID);
+    }
 }

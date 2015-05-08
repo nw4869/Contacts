@@ -5,8 +5,10 @@ import android.content.ContentProviderResult;
 import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.ContentValues;
+import android.content.OperationApplicationException;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.RemoteException;
 import android.provider.ContactsContract;
 import android.test.AndroidTestCase;
 import android.util.Log;
@@ -27,6 +29,19 @@ public class ContactTest extends AndroidTestCase
 
     public void testQueryContact() {
         
+    }
+
+    public void testUpdateContact() throws Exception {
+        long rawContactId = 2;
+        long dataId = 27;
+        ArrayList<ContentProviderOperation> ops = new ArrayList<>();
+        ops.add(ContentProviderOperation.newUpdate(ContactsContract.Data.CONTENT_URI)
+                .withSelection(ContactsContract.Contacts.Entity.DATA_ID + "=?", new String[]{String.valueOf(dataId)})
+                .withValue(ContactsContract.Data.DATA1, "1234567890")
+                .withValue(ContactsContract.Data.DATA2, ContactsContract.CommonDataKinds.Phone.TYPE_CUSTOM)
+                .withValue(ContactsContract.Data.DATA3, "my Label")
+                .build());
+        getContext().getContentResolver().applyBatch(ContactsContract.AUTHORITY, ops);
     }
 
     public void testContactSave1() throws Throwable {

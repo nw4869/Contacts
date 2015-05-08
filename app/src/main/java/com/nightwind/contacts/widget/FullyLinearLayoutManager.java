@@ -48,11 +48,13 @@ public class FullyLinearLayoutManager extends LinearLayoutManager {
                     mMeasuredDimension);
 
             if (getOrientation() == HORIZONTAL) {
+                Log.d("FullyLinearLayout", "position = " + i + " width = " + mMeasuredDimension[0]);
                 width = width + mMeasuredDimension[0];
                 if (i == 0) {
                     height = mMeasuredDimension[1];
                 }
             } else {
+                Log.d("FullyLinearLayout", "position = " + i + " height = " + mMeasuredDimension[1]);
                 height = height + mMeasuredDimension[1];
                 if (i == 0) {
                     width = mMeasuredDimension[0];
@@ -72,7 +74,7 @@ public class FullyLinearLayoutManager extends LinearLayoutManager {
             case View.MeasureSpec.AT_MOST:
             case View.MeasureSpec.UNSPECIFIED:
         }
-
+        Log.d("FullyLinearLayout", "width = " + width + " height = " + height);
         setMeasuredDimension(width, height);
     }
 
