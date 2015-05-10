@@ -14,6 +14,8 @@ import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.GestureDetector;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -21,6 +23,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.nightwind.contacts.R;
+import com.nightwind.contacts.activity.ContactActivity;
 import com.nightwind.contacts.model.Contact;
 import com.nightwind.contacts.model.ContactLoader;
 import com.nightwind.contacts.model.dataitem.DataItem;
@@ -120,6 +123,9 @@ public class ContactFragment extends Fragment {
 //            throw new ClassCastException(activity.toString()
 //                    + " must implement OnFragmentInteractionListener");
 //        }
+        if (contact != null && contact.getName() != null) {
+            ((ContactActivity)activity).getSupportActionBar().setTitle(contact.getName());
+        }
     }
 
     @Override
@@ -312,6 +318,9 @@ public class ContactFragment extends Fragment {
     }
 
     private void refreshData() {
+        if (getActivity() != null) {
+            ((ContactActivity)getActivity()).getSupportActionBar().setTitle(contact.getName());
+        };
         adapter.notifyDataSetChanged();
     }
 

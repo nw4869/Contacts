@@ -156,7 +156,7 @@ public class ContactsFragment extends MainToolbarActivity.PlaceholderFragment {
                     Intent intent = new Intent(getActivity(), ContactActivity.class);
                     intent.putExtra(ContactActivity.ARG_CONTACT_LOOKUP_URI, contact.getLookupUri());
                     startActivity(intent);
-                    getActivity().overridePendingTransition(R.anim.slide_in_bottom, 0);
+//                    getActivity().overridePendingTransition(R.anim.slide_in_bottom, 0);
                 }
             });
             contactViewHolder.itemView.setOnLongClickListener(new View.OnLongClickListener() {
@@ -187,7 +187,7 @@ public class ContactsFragment extends MainToolbarActivity.PlaceholderFragment {
     }
 
 
-    private class ContactViewHolder extends RecyclerView.ViewHolder {
+    static class ContactViewHolder extends RecyclerView.ViewHolder {
 
         public TextView name;
         public ImageView photo;

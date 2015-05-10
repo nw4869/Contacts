@@ -107,7 +107,7 @@ public class ContactLoader extends AsyncTaskLoader<Contact> {
 
         public static final String SELECTION_LOOKUP = Data.LOOKUP_KEY + " = ?";
 
-        public static final String SORT_ORDER = Data.MIMETYPE + " ASC ";
+        public static final String SORT_ORDER = Data.MIMETYPE + " DESC ";
 
         public static final int NAME_RAW_CONTACT_ID = 0;
         public static final int DISPLAY_NAME_SOURCE = 1;

@@ -6,6 +6,7 @@ import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.OperationApplicationException;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.RemoteException;
 import android.provider.ContactsContract;
@@ -31,6 +32,56 @@ public class Contacts {
         this.context = context;
     }
 
+    public List<Contact> searchContact(String queryName) {
+        Uri lookupUri = Uri.withAppendedPath(ContactsContract.Contacts.CONTENT_FILTER_URI,
+                Uri.encode(queryName));
+        ContentResolver resolver = context.getContentResolver();
+        Cursor cursor = resolver.query(lookupUri, null, null, null, null);
+        List<Contact> contacts = new ArrayList<>();
+        if (cursor.moveToFirst()) {
+            do {
+                Contact contact = new Contact();
+                String fullName = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME));
+                String lookupKey = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts.LOOKUP_KEY));
+                String photoUri = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts.PHOTO_URI));
+                contact.setName(fullName);
+                contact.setLookupUri(lookupKey);
+                contact.setPhotoUri(photoUri);
+//                Log.d(TAG, "name = " + fullName + " lookupKey = " + lookupKey);
+
+                Uri contactUri = Uri.withAppendedPath(ContactsContract.Contacts.CONTENT_LOOKUP_URI, lookupKey + "/entities");
+                String[] COLUMNS = new String[] {
+                        ContactsContract.CommonDataKinds.Phone.NUMBER,
+                        ContactsContract.Data.MIMETYPE,
+                };
+
+                //获取联系人的手机号码
+                Cursor dataCursor = resolver.query(contactUri,
+                        COLUMNS,
+                        ContactsContract.Data.MIMETYPE + "=?",
+                        new String[]{ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE},
+                        null);
+                if (dataCursor.moveToFirst()) {
+                    List<DataItem> dataItems = new ArrayList<>();
+                    do {
+                        String phoneNumber = dataCursor.getString(0);
+//                        Log.d(TAG, "\t\tphoneNumber = " + phoneNumber);
+
+                        ContentValues values = new ContentValues();
+                        values.put(ContactsContract.Data.MIMETYPE, ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE);
+                        values.put(ContactsContract.CommonDataKinds.Phone.DATA, phoneNumber);
+                        dataItems.add(DataItem.createFrom(values));
+                    } while (dataCursor.moveToNext());
+                    contact.setData(dataItems);
+                }
+                contacts.add(contact);
+                dataCursor.close();
+            } while (cursor.moveToNext());
+        }
+        cursor.close();
+        return contacts;
+    }
+
     public void saveContact(String name, String photoUri, List<DataItem> dataItems) throws RemoteException, OperationApplicationException {
         ArrayList<ContentProviderOperation> ops = new ArrayList<>();
         int rawContactInsertIndex = ops.size();
@@ -50,7 +101,7 @@ public class Contacts {
                         .withValueBackReference(ContactsContract.RawContacts.Data.RAW_CONTACT_ID, rawContactInsertIndex)
                         .withValue(ContactsContract.RawContacts.Data.MIMETYPE, ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE)
                         .withValue(ContactsContract.CommonDataKinds.Phone.NUMBER, phoneDataItem.getNumber())
-                        .withValue(ContactsContract.CommonDataKinds.Phone.TYPE, ContactsContract.CommonDataKinds.Phone.TYPE_MOBILE)
+                        .withValue(ContactsContract.CommonDataKinds.Phone.TYPE, dataItem.getType())
                         .withValue(ContactsContract.CommonDataKinds.Phone.LABEL, phoneDataItem.getLabel())
                         .build());
             } else if (dataItem.getMimeType().equals(ContactsContract.CommonDataKinds.Email.CONTENT_ITEM_TYPE)) {
@@ -59,7 +110,7 @@ public class Contacts {
                         .withValueBackReference(ContactsContract.RawContacts.Data.RAW_CONTACT_ID, rawContactInsertIndex)
                         .withValue(ContactsContract.RawContacts.Data.MIMETYPE, ContactsContract.CommonDataKinds.Email.CONTENT_ITEM_TYPE)
                         .withValue(ContactsContract.CommonDataKinds.Email.DATA, emailDataItem.getAddress())
-                        .withValue(ContactsContract.CommonDataKinds.Email.TYPE, ContactsContract.CommonDataKinds.Email.TYPE_WORK)
+                        .withValue(ContactsContract.CommonDataKinds.Email.TYPE, dataItem.getType())
                         .withValue(ContactsContract.CommonDataKinds.Email.LABEL, emailDataItem.getLabel())
                         .build());
             }
@@ -73,13 +124,6 @@ public class Contacts {
 
     }
 
-    public void deleteContact(String lookupKey) {
-        ContentValues values = new ContentValues();
-        values.put(ContactsContract.RawContacts.DELETED, 1);
-        ContentResolver resolver = context.getContentResolver();
-//        resolver.update(ContactsContract.RawContacts.CONTENT_URI, values,
-//                ContactsContract.RawContacts. + "")
-    }
 
     public void updateContact(Contact contact) throws RemoteException, OperationApplicationException {
 
@@ -113,5 +157,11 @@ public class Contacts {
             }
         }
         context.getContentResolver().applyBatch(ContactsContract.AUTHORITY, ops);
+    }
+
+    public boolean deleteContact(String lookupKey) {
+        Uri uri = Uri.withAppendedPath(ContactsContract.Contacts.CONTENT_LOOKUP_URI, lookupKey);
+        int result = context.getContentResolver().delete(uri, null, null);
+        return result == 1;
     }
 }

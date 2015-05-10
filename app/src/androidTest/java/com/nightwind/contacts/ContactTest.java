@@ -13,6 +13,8 @@ import android.provider.ContactsContract;
 import android.test.AndroidTestCase;
 import android.util.Log;
 
+import com.nightwind.contacts.model.Contact;
+import com.nightwind.contacts.model.ContactEntity;
 import com.nightwind.contacts.model.Contacts;
 import com.nightwind.contacts.model.dataitem.DataItem;
 import com.nightwind.contacts.model.dataitem.PhoneDataItem;
@@ -27,8 +29,54 @@ public class ContactTest extends AndroidTestCase
 {
     private static final String TAG = "ContactTest";
 
-    public void testQueryContact() {
-        
+    public void testDeleteContact() {
+        long rawContactId = 3;
+        ContentValues values = new ContentValues();
+        values.put(ContactsContract.RawContacts.DELETED, 1);
+        int result = getContext().getContentResolver().update(ContactsContract.RawContacts.CONTENT_URI,
+                values,
+                ContactsContract.RawContacts._ID + "=?",
+                new String[]{String.valueOf(rawContactId)});
+        Log.d(TAG, "result = " + result);
+    }
+
+    public void testDeleteContact1() {
+        String lookupKey = "0r1-4329413116";
+        Uri uri = Uri.withAppendedPath(ContactsContract.Contacts.CONTENT_LOOKUP_URI, lookupKey);
+        int reuslt = getContext().getContentResolver().delete(uri, null, null);
+        Log.d(TAG, "result = " + reuslt);
+    }
+
+    public void testSearchContactByPartialName() {
+        //args
+        String queryName = "a";
+
+        //begin time
+        long begin = System.currentTimeMillis();
+
+        new Contacts(getContext()).searchContact(queryName);
+
+        long end = System.currentTimeMillis();
+
+        Log.d(TAG, "time used: " + (end - begin) / 1000.0 + "s");
+    }
+
+    public void testSearchContact() {
+        String phoneNumber = "1234";
+        Uri lookupUri = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI,
+                Uri.encode(phoneNumber));
+        ContentResolver resolver = getContext().getContentResolver();
+        Cursor cursor = resolver.query(lookupUri, null, null, null, null);
+        Log.d(TAG, "search begin");
+        if (cursor.moveToFirst()) {
+            do {
+                String number = cursor.getString(cursor.getColumnIndex(ContactsContract.PhoneLookup.NUMBER));
+                Log.d(TAG, "number = " + number);
+
+            } while (cursor.moveToNext());
+        }
+        Log.d(TAG, "search end");
+        cursor.close();
     }
 
     public void testUpdateContact() throws Exception {

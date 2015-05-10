@@ -27,6 +27,14 @@
     <string name="save">保存</string>
     <string name="save_failed">保存失败</string>
     <string name="save_success">保存成功</string>
-    <string name="title_activity_contact">ContactActivity</string>
+    <string name="title_activity_contact">联系人</string>
+    <string name="action_search">搜索</string>
+    <string name="search_label">搜索</string>
+    <string name="search_hint">输入姓名或手机号码</string>
+    <string name="action_edit">编辑</string>
+    <string name="action_delete">删除</string>
+    <string name="delete_success">删除成功</string>
+    <string name="delete_failed">删除失败</string>
+    <string name="custom">自定义</string>
 
 </resources>

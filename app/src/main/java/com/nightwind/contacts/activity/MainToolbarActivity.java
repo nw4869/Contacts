@@ -1,32 +1,36 @@
 package com.nightwind.contacts.activity;
 
-import android.app.Activity;
+import android.app.SearchManager;
+import android.app.SearchableInfo;
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
-import android.support.v4.widget.DrawerLayout;
-import android.support.v7.app.ActionBar;
-import android.support.v7.app.ActionBarActivity;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.text.TextUtils;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.GestureDetector;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.SearchView;
 
 import com.nightwind.contacts.R;
-import com.nightwind.contacts.fragment.ContactEditorFragment;
 import com.nightwind.contacts.fragment.ContactFragment;
 import com.nightwind.contacts.fragment.ContactsFragment;
-import com.nightwind.contacts.fragment.NavigationDrawerFragment;
+import com.nightwind.contacts.fragment.SearchResultListFragment;
 import com.nightwind.contacts.widget.PagerSlidingTabStrip;
 
 import java.util.Locale;
@@ -39,6 +43,8 @@ public class MainToolbarActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main_toolbar);
+
+        doSearchQuery(getIntent());
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -91,6 +97,36 @@ public class MainToolbarActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     *  activity声明为singleTop模式
+     * @param intent
+     */
+    @Override
+    protected void onNewIntent(Intent intent) {  //activity重新置顶
+        super.onNewIntent(intent);
+        doSearchQuery(intent);
+    }
+
+    /**
+     *  从intent中获取信息，即要搜索的内容
+     * @param intent
+     */
+    private void doSearchQuery(Intent intent){
+        if(intent == null)
+            return;
+
+        String queryAction = intent.getAction();
+        if( Intent.ACTION_SEARCH.equals( intent.getAction())){  //如果是通过ACTION_SEARCH来调用，即如果通过搜索调用
+            String queryString = intent.getStringExtra(SearchManager.QUERY); //获取搜索内容
+                getSupportFragmentManager().beginTransaction()
+                        .add(R.id.container, SearchResultListFragment.newInstance(queryString))
+                        .addToBackStack(SearchResultListFragment.class.getSimpleName())
+                        .commit();
+                getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+                getSupportActionBar().setHomeButtonEnabled(true);
+        }
+
+    }
 
     /**
      * pagerSlidingTabStrip tab配置
@@ -128,6 +164,40 @@ public class MainToolbarActivity extends AppCompatActivity {
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main_toolbar, menu);
+        // 获取SearchView对象
+        final SearchView searchView = (SearchView) menu.findItem(R.id.action_search).getActionView();
+        if(searchView == null){
+            Log.e("SearchView", "Fail to get Search View.");
+            return true;
+        }
+
+//        // 获取搜索服务管理器
+//        SearchManager searchManager = (SearchManager) getSystemService(Context.SEARCH_SERVICE);
+//        // searchable activity的component name，由此系统可通过intent进行唤起
+//        ComponentName cn = new ComponentName(this, MainToolbarActivity.class);
+//        // 通过搜索管理器，从searchable activity中获取相关搜索信息，就是searchable的xml设置。如果返回null，表示该activity不存在，或者不是searchable
+//        SearchableInfo info = searchManager.getSearchableInfo(cn);
+//        if(info == null){
+//            Log.e("SearchableInfo", "Fail to get search info.");
+//        }
+//        // 将searchable activity的搜索信息与search view关联
+//        searchView.setSearchableInfo(info);
+
+        SearchManager searchManager = (SearchManager) getSystemService(Context.SEARCH_SERVICE);
+        searchView.setSearchableInfo(searchManager.getSearchableInfo(getComponentName()));
+        searchView.setIconifiedByDefault(true); // 缺省值就是true，可能不专门进行设置，true的输入框更大
+        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                return false;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                return false;
+            }
+        });
+
         return true;
     }
 
@@ -141,14 +211,23 @@ public class MainToolbarActivity extends AppCompatActivity {
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
             return true;
-        } else if (id == R.id.home) {
-//            getSupportActionBar().setDisplayHomeAsUpEnabled(false);
-//            getSupportActionBar().setHomeButtonEnabled(false);
+        } else if (id == android.R.id.home) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(false);
+            getSupportActionBar().setHomeButtonEnabled(false);
+            getSupportFragmentManager().popBackStack(SearchResultListFragment.class.getSimpleName(), FragmentManager.POP_BACK_STACK_INCLUSIVE);
         }
 
         return super.onOptionsItemSelected(item);
     }
 
+    @Override
+    public boolean onKeyUp(int keyCode, @NonNull KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_BACK) {
+        getSupportActionBar().setDisplayHomeAsUpEnabled(false);
+        getSupportActionBar().setHomeButtonEnabled(false);
+        }
+        return super.onKeyUp(keyCode, event);
+    }
 
     /**
      * A {@link FragmentPagerAdapter} that returns a fragment corresponding to

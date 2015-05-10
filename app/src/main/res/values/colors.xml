@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="background_tab_pressed">#81D4FA</color>
+    <color name="translucent">#10000000</color>
+    <color name="background">#fff3f3f3</color>
+    <color name="background_item_sel">#aaeeeeee</color>
 </resources>

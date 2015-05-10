@@ -156,7 +156,8 @@ public class ContactEditorFragment extends Fragment {
         public long id;
         public String data;
         public String label;
-        public int labelType;
+        public int labelType = 1;
+        public int newLabelType = 1;
     }
 
 
@@ -290,6 +291,10 @@ public class ContactEditorFragment extends Fragment {
             notifyDataSetChanged();
         }
 
+        public boolean isEditMode() {
+            return mContactLookupUri != null;
+        }
+
         private class recyclerEditorAdapter extends RecyclerView.Adapter {
 
             private final int type;
@@ -318,24 +323,32 @@ public class ContactEditorFragment extends Fragment {
                 if (type == VIEW_TYPE_PHONE) {
                     typeImageResource = R.drawable.ic_action_call;
                     textHint = "电话";
-                    String labelHome = getResources().getString(Phone.getTypeLabelResource(Phone.TYPE_HOME));
-                    String labelWork = getResources().getString(Phone.getTypeLabelResource(Phone.TYPE_WORK));
-                    spinnerList.add(labelHome);
-                    spinnerList.add(labelWork);
+
+                    // add spinner type label
+                    for (int i = 0; i <= Phone.TYPE_OTHER; i++) {
+                        if (i > 0 || isEditMode() && item.labelType == Phone.TYPE_CUSTOM) {
+                            CharSequence label = Phone.getTypeLabel(getResources(), i, item.label);
+                            spinnerList.add(String.valueOf(label));
+                        }
+                    }
+
                     ((SpinnerDataEditorViewHolder) holder).data.setText(item.data);
-//                    ((SpinnerDataEditorViewHolder) holder).data.setText(Phone.getTypeLabel(getResources(), item.labelType, item.label));
-                    ((SpinnerDataEditorViewHolder) holder).spinner.setSelection(item.labelType);
                 } else if (type == VIEW_TYPE_EMAIL) {
                     typeImageResource = R.drawable.ic_action_mail;
                     textHint = "邮箱";
-                    String labelHome = getResources().getString(Email.getTypeLabelResource(Email.TYPE_HOME));
-                    String labelWork = getResources().getString(Email.getTypeLabelResource(Email.TYPE_WORK));
-                    spinnerList.add(labelHome);
-                    spinnerList.add(labelWork);
+
+                    // add spinner type lable
+                    for (int i = 0; i <= Email.TYPE_MOBILE; i++) {
+                        if (i > 0 || isEditMode() && item.labelType == Email.TYPE_CUSTOM) {
+                            CharSequence label = Email.getTypeLabel(getResources(), i, item.label);
+                            spinnerList.add(String.valueOf(label));
+                        }
+                    }
+
                     ((SpinnerDataEditorViewHolder) holder).data.setText(item.data);
-//                    ((SpinnerDataEditorViewHolder) holder)..setText(Email.getTypeLabel(getResources(), item.labelType, item.label));
-                    ((SpinnerDataEditorViewHolder) holder).spinner.setSelection(item.labelType);
                 }
+
+                // set deleteImage action and visible or not
                 if (position < getItemCount() - 1) {
                     viewHolder.deleteImage.setImageResource(R.drawable.ic_close);
 
@@ -356,11 +369,17 @@ public class ContactEditorFragment extends Fragment {
                         }
                     }
                 });
+
+                // set spinner
                 viewHolder.spinner.setAdapter(new ArrayAdapter<>(context, R.layout.item_spinner_text, spinnerList));
                 viewHolder.spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
                     @Override
                     public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                        item.labelType = position;
+                        if (item.labelType == ContactsContract.CommonDataKinds.BaseTypes.TYPE_CUSTOM) {
+                            item.newLabelType = position;
+                        } else {
+                            item.newLabelType = position + 1;
+                        }
                     }
 
                     @Override
@@ -368,11 +387,20 @@ public class ContactEditorFragment extends Fragment {
 
                     }
                 });
+                if (item.labelType == ContactsContract.CommonDataKinds.BaseTypes.TYPE_CUSTOM) {
+                    viewHolder.spinner.setSelection(item.labelType);
+                } else {
+                    viewHolder.spinner.setSelection(item.labelType - 1);
+                }
+
+                // set type image
                 if (position > 0) {
                     viewHolder.typeImage.setImageDrawable(null);
                 } else {
                     viewHolder.typeImage.setImageResource(typeImageResource);
                 }
+
+                // set data
                 viewHolder.data.setHint(textHint);
                 final int finalTypeImageResource = typeImageResource;
                 viewHolder.data.addTextChangedListener(new TextWatcher() {
@@ -513,7 +541,7 @@ public class ContactEditorFragment extends Fragment {
             cv.put(ContactsContract.Data._ID, item.id);
             cv.put(Phone.MIMETYPE, Phone.CONTENT_ITEM_TYPE);
             cv.put(Phone.NUMBER, item.data);
-            cv.put(Phone.TYPE, item.labelType);
+            cv.put(Phone.TYPE, item.newLabelType);
             cv.put(Phone.LABEL, item.label);
             dataItems.add(DataItem.createFrom(cv));
         }
@@ -526,7 +554,7 @@ public class ContactEditorFragment extends Fragment {
             cv.put(ContactsContract.Data._ID, item.id);
             cv.put(Email.MIMETYPE, Email.CONTENT_ITEM_TYPE);
             cv.put(Email.ADDRESS, item.data);
-            cv.put(Email.TYPE, item.labelType);
+            cv.put(Email.TYPE, item.newLabelType);
             cv.put(Email.LABEL, item.label);
             dataItems.add(DataItem.createFrom(cv));
         }
@@ -539,6 +567,7 @@ public class ContactEditorFragment extends Fragment {
                 ContentValues cv = new ContentValues();
                 cv.put(ContactsContract.Data._ID, id);
                 dataItems.add(DataItem.createFrom(cv));
+
             }
         }
 

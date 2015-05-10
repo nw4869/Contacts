@@ -4,4 +4,9 @@
     tools:context="com.nightwind.contacts.activity.MainToolbarActivity">
     <item android:id="@+id/action_settings" android:title="@string/action_settings"
         android:orderInCategory="100" app:showAsAction="never" />
+    <item android:id="@+id/action_search" android:title="@string/action_search"
+        android:orderInCategory="99" app:showAsAction="ifRoom"
+        android:actionViewClass="android.widget.SearchView"
+        app:actionViewClass="android.widget.SearchView"/>
+    <!-- 因为是用了support library，所有这里要用的是app:actionViewClass-->
 </menu>
