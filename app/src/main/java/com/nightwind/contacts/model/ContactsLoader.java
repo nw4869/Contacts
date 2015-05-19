@@ -38,9 +38,11 @@ public class ContactsLoader extends AsyncTaskLoader<List<Contact>> {
             ContactsContract.Contacts.PHOTO_THUMBNAIL_URI, // ..........................7
             ContactsContract.Contacts.SORT_KEY_PRIMARY,//...............................8
     };
+    private final boolean starred;
 
-    public ContactsLoader(Context context) {
+    public ContactsLoader(Context context, boolean starred) {
         super(context);
+        this.starred = starred;
     }
 
     @Override
@@ -51,8 +53,15 @@ public class ContactsLoader extends AsyncTaskLoader<List<Contact>> {
 
     @Override
     public List<Contact> loadInBackground() {
+        String selection = null;
+        String[] selectionArgs = null;
+        if (starred) {
+            selection = ContactsContract.Contacts.STARRED + "=?";
+            selectionArgs = new String[] {"1"};
+        }
+
         Cursor cursor = getContext().getContentResolver().query(ContactsContract.Contacts.CONTENT_URI,
-                COLUMNS, null,null, "sort_key COLLATE LOCALIZED asc");
+                COLUMNS, selection, selectionArgs, "sort_key COLLATE LOCALIZED asc");
         List<Contact> contacts = new ArrayList<>();
         try {
             if (!cursor.moveToFirst()) {
@@ -70,6 +79,8 @@ public class ContactsLoader extends AsyncTaskLoader<List<Contact>> {
 //                Log.d("ContactFragment", "id = " + id + " name = " + name + " starred = " + starred + " photoUri = " + photoUri + " photoThumbUri = " + photoThumbUri);
 
                 Contact contact = new Contact();
+                contact.setId(id);
+                contact.setStarred(starred == 1);
                 contact.setName(name);
                 contact.setPhotoUri(photoUri);
                 contact.setLookupUri(lookupUri);

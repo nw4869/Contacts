@@ -6,8 +6,10 @@ import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.OperationApplicationException;
+import android.content.res.AssetFileDescriptor;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Environment;
 import android.os.RemoteException;
 import android.provider.ContactsContract;
 import android.text.TextUtils;
@@ -17,6 +19,10 @@ import com.nightwind.contacts.model.dataitem.DataItem;
 import com.nightwind.contacts.model.dataitem.EmailDataItem;
 import com.nightwind.contacts.model.dataitem.PhoneDataItem;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -50,7 +56,7 @@ public class Contacts {
 //                Log.d(TAG, "name = " + fullName + " lookupKey = " + lookupKey);
 
                 Uri contactUri = Uri.withAppendedPath(ContactsContract.Contacts.CONTENT_LOOKUP_URI, lookupKey + "/entities");
-                String[] COLUMNS = new String[] {
+                String[] COLUMNS = new String[]{
                         ContactsContract.CommonDataKinds.Phone.NUMBER,
                         ContactsContract.Data.MIMETYPE,
                 };
@@ -94,7 +100,7 @@ public class Contacts {
                 .withValue(ContactsContract.RawContacts.Data.MIMETYPE, ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE)
                 .withValue(ContactsContract.CommonDataKinds.StructuredName.GIVEN_NAME, name)
                 .build());
-        for (DataItem dataItem: dataItems) {
+        for (DataItem dataItem : dataItems) {
             if (dataItem.getMimeType().equals(ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE)) {
                 PhoneDataItem phoneDataItem = (PhoneDataItem) dataItem;
                 ops.add(ContentProviderOperation.newInsert(android.provider.ContactsContract.Data.CONTENT_URI)
@@ -117,8 +123,7 @@ public class Contacts {
         }
         ContentProviderResult[] results = context.getContentResolver()
                 .applyBatch(ContactsContract.AUTHORITY, ops);
-        for(ContentProviderResult result : results)
-        {
+        for (ContentProviderResult result : results) {
             Log.i(TAG, result.uri.toString());
         }
 
@@ -129,7 +134,14 @@ public class Contacts {
 
         ArrayList<ContentProviderOperation> ops = new ArrayList<>();
 
-        for (DataItem dataItem: contact.getData()) {
+        ops.add(ContentProviderOperation.newUpdate(ContactsContract.Data.CONTENT_URI)
+                .withSelection(ContactsContract.Data.RAW_CONTACT_ID + "=?",
+                        new String[]{String.valueOf(contact.getRawContactId())})
+                .withValue(ContactsContract.Data.MIMETYPE, ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE)
+                .withValue(ContactsContract.CommonDataKinds.StructuredName.GIVEN_NAME, contact.getName())
+                .build());
+
+        for (DataItem dataItem : contact.getData()) {
             if (dataItem.getId() == 0) {
                 // insert
                 ops.add(ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
@@ -143,7 +155,7 @@ public class Contacts {
                 if (TextUtils.isEmpty(dataItem.getData())) {
                     // delete
                     ops.add(ContentProviderOperation.newDelete(ContactsContract.Data.CONTENT_URI)
-                            .withSelection(ContactsContract.Data._ID + "=?", new String[] {String.valueOf(dataItem.getId())})
+                            .withSelection(ContactsContract.Data._ID + "=?", new String[]{String.valueOf(dataItem.getId())})
                             .build());
                 } else {
                     // update
@@ -159,9 +171,95 @@ public class Contacts {
         context.getContentResolver().applyBatch(ContactsContract.AUTHORITY, ops);
     }
 
-    public boolean deleteContact(String lookupKey) {
-        Uri uri = Uri.withAppendedPath(ContactsContract.Contacts.CONTENT_LOOKUP_URI, lookupKey);
-        int result = context.getContentResolver().delete(uri, null, null);
+    public void deleteContact(String contactId, String rawContactId) throws RemoteException, OperationApplicationException {
+
+        ArrayList<ContentProviderOperation> ops = new ArrayList<>();
+
+        ops.add(ContentProviderOperation.newDelete(ContactsContract.Data.CONTENT_URI)
+                .withSelection(ContactsContract.Data.RAW_CONTACT_ID + "=?", new String[]{rawContactId})
+                .build());
+
+        ops.add(ContentProviderOperation.newDelete(ContactsContract.RawContacts.CONTENT_URI)
+                .withSelection(ContactsContract.RawContacts.CONTACT_ID + "=?", new String[]{contactId})
+                .build());
+
+        ops.add(ContentProviderOperation.newDelete(ContactsContract.Contacts.CONTENT_URI)
+                .withSelection(ContactsContract.Contacts._ID + "=?", new String[]{contactId})
+                .build());
+
+        context.getContentResolver().applyBatch(ContactsContract.AUTHORITY, ops);
+
+//        Uri uri = Uri.withAppendedPath(ContactsContract.Contacts.CONTENT_LOOKUP_URI, lookupKey);
+//        int result = context.getContentResolver().delete(uri, null, null);
+//        return result == 1;
+    }
+
+
+    public boolean setStarred(String lookupKey, boolean starred) {
+        ContentValues values = new ContentValues();
+        values.put(ContactsContract.Contacts.STARRED, starred ? 1 : 0);
+        int result = context.getContentResolver().update(ContactsContract.Contacts.CONTENT_URI, values, ContactsContract.Contacts.LOOKUP_KEY + "=?", new String[]{lookupKey});
         return result == 1;
+    }
+
+    public void deleteAllContacts() throws RemoteException, OperationApplicationException {
+
+        ContentResolver resolver = context.getContentResolver();
+
+        Cursor cursor = resolver.query(ContactsContract.RawContacts.CONTENT_URI,
+                new String[]{ContactsContract.RawContacts._ID, ContactsContract.RawContacts.CONTACT_ID},
+                null, null, null);
+        if (cursor.moveToFirst()) {
+            do {
+                long rawId = cursor.getLong(0);
+                long contactId = cursor.getLong(1);
+                deleteContact(String.valueOf(contactId), String.valueOf(rawId));
+            } while (cursor.moveToNext());
+        }
+        cursor.close();
+
+    }
+
+    public String getLookupKey(String name) {
+        String lookupKey = null;
+
+        ContentResolver resolver = context.getContentResolver();
+
+        Cursor cursor = resolver.query(ContactsContract.Contacts.CONTENT_URI,
+                new String[]{ContactsContract.Contacts.LOOKUP_KEY},
+                ContactsContract.Contacts.DISPLAY_NAME + "=?",
+                new String[]{name}, null);
+
+        if (cursor.moveToFirst()) {
+            lookupKey = cursor.getString(0);
+        }
+        return lookupKey;
+    }
+
+    public boolean nameIsExist(String name) {
+        return getLookupKey(name) != null;
+    }
+
+
+    public void exportContacts() throws IOException {
+        String path = Environment.getExternalStorageDirectory().getPath() + "/contacts.vcf";
+
+        ContentResolver cr = context.getContentResolver();
+        Cursor cur = cr.query(ContactsContract.Contacts.CONTENT_URI, null, null, null, null);
+        int index = cur.getColumnIndex(ContactsContract.Contacts.LOOKUP_KEY);
+        FileOutputStream fout = new FileOutputStream(path);
+        byte[] data = new byte[1024 * 1];
+        while (cur.moveToNext()) {
+            String lookupKey = cur.getString(index);
+            Uri uri = Uri.withAppendedPath(ContactsContract.Contacts.CONTENT_VCARD_URI, lookupKey);
+            AssetFileDescriptor fd = context.getContentResolver().openAssetFileDescriptor(uri, "r");
+            FileInputStream fin = fd.createInputStream();
+            int len = -1;
+            while ((len = fin.read(data)) != -1) {
+                fout.write(data, 0, len);
+            }
+            fin.close();
+        }
+        fout.close();
     }
 }

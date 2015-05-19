@@ -8,4 +8,7 @@
     <item android:id="@+id/action_delete" android:title="@string/action_delete"
         android:icon="@drawable/ic_action_delete"
         android:orderInCategory="99" app:showAsAction="ifRoom" />
+    <item android:id="@+id/action_star" android:title="@string/action_star"
+        android:icon="@drawable/ic_action_star_outline"
+        android:orderInCategory="98" app:showAsAction="ifRoom" />
 </menu>

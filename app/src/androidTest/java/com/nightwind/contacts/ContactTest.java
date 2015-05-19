@@ -8,6 +8,7 @@ import android.content.ContentValues;
 import android.content.OperationApplicationException;
 import android.database.Cursor;
 import android.net.Uri;
+import android.nfc.Tag;
 import android.os.RemoteException;
 import android.provider.ContactsContract;
 import android.test.AndroidTestCase;
@@ -19,6 +20,7 @@ import com.nightwind.contacts.model.Contacts;
 import com.nightwind.contacts.model.dataitem.DataItem;
 import com.nightwind.contacts.model.dataitem.PhoneDataItem;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,16 +31,16 @@ public class ContactTest extends AndroidTestCase
 {
     private static final String TAG = "ContactTest";
 
-    public void testDeleteContact() {
-        long rawContactId = 3;
-        ContentValues values = new ContentValues();
-        values.put(ContactsContract.RawContacts.DELETED, 1);
-        int result = getContext().getContentResolver().update(ContactsContract.RawContacts.CONTENT_URI,
-                values,
-                ContactsContract.RawContacts._ID + "=?",
-                new String[]{String.valueOf(rawContactId)});
-        Log.d(TAG, "result = " + result);
-    }
+//    public void testDeleteContact() {
+//        long rawContactId = 3;
+//        ContentValues values = new ContentValues();
+//        values.put(ContactsContract.RawContacts.DELETED, 1);
+//        int result = getContext().getContentResolver().update(ContactsContract.RawContacts.CONTENT_URI,
+//                values,
+//                ContactsContract.RawContacts._ID + "=?",
+//                new String[]{String.valueOf(rawContactId)});
+//        Log.d(TAG, "result = " + result);
+//    }
 
     public void testDeleteContact1() {
         String lookupKey = "0r1-4329413116";
@@ -211,5 +213,62 @@ public class ContactTest extends AndroidTestCase
             Log.i(TAG, result.uri.toString());
         }
 
+    }
+
+
+    public void testStarContact() {
+        String lookupKey = "0r11-4F314D4F";
+        boolean ok = new Contacts(getContext()).setStarred(lookupKey, true);
+        assertTrue(ok);
+    }
+
+    public void testDeleteAllContact() throws RemoteException, OperationApplicationException {
+        new Contacts(getContext()).deleteAllContacts();
+
+    }
+
+    public void testGetGroups() {
+        Cursor groupCursor = getContext().getContentResolver().query(
+                ContactsContract.Groups.CONTENT_URI,
+                new String[]{
+                        ContactsContract.Groups._ID,
+                        ContactsContract.Groups.TITLE
+                }, null, null, null
+        );
+
+        if (groupCursor.moveToFirst())
+            do {
+                long id = groupCursor.getLong(0);
+                String title = groupCursor.getString(1);
+                Log.d(TAG, "id = " + id + " title = " + title);
+            } while (groupCursor.moveToNext());
+        Log.d(TAG, "getGroups done.");
+
+        groupCursor.close();
+    }
+
+    public void testGetContactsGroup() {
+        Cursor dataCursor = getContext().getContentResolver().query(
+                ContactsContract.Data.CONTENT_URI,
+                new String[]{
+                        ContactsContract.Data.CONTACT_ID,
+                        ContactsContract.Data.DATA1
+                },
+                ContactsContract.Data.MIMETYPE + "=?",
+                new String[]{ContactsContract.CommonDataKinds.GroupMembership.CONTENT_ITEM_TYPE}, null
+        );
+
+        if (dataCursor.moveToFirst())
+            do {
+                long id = dataCursor.getLong(0);
+                String group = dataCursor.getString(1);
+                Log.d(TAG, "id = " + id + " group = " + group);
+            } while (dataCursor.moveToNext());
+        dataCursor.close();
+        Log.d(TAG, "getContactsGroup done.");
+    }
+
+    public void testExport() throws IOException {
+        new Contacts(getContext()).exportContacts();
     }
 }

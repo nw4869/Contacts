@@ -4,6 +4,10 @@
     tools:context="com.nightwind.contacts.activity.MainToolbarActivity">
     <item android:id="@+id/action_settings" android:title="@string/action_settings"
         android:orderInCategory="100" app:showAsAction="never" />
+    <item android:id="@+id/action_delete_all" android:title="@string/action_delete_all"
+        android:orderInCategory="98" app:showAsAction="never" />
+    <item android:id="@+id/action_export" android:title="@string/action_export"
+        android:orderInCategory="97" app:showAsAction="never" />
     <item android:id="@+id/action_search" android:title="@string/action_search"
         android:orderInCategory="99" app:showAsAction="ifRoom"
         android:actionViewClass="android.widget.SearchView"

@@ -14,6 +14,7 @@ public class Contact {
     private String photoUri;
     private String lookupUri;
     private List<DataItem> data;
+    private boolean starred;
 
     public String getName() {
         return name;
@@ -61,5 +62,13 @@ public class Contact {
 
     public void setRawContactId(long rawContactId) {
         this.rawContactId = rawContactId;
+    }
+
+    public boolean isStarred() {
+        return starred;
+    }
+
+    public void setStarred(boolean starred) {
+        this.starred = starred;
     }
 }

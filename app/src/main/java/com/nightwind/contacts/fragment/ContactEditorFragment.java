@@ -1,8 +1,10 @@
 package com.nightwind.contacts.fragment;
 
 
+import android.app.Activity;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.Intent;
 import android.content.OperationApplicationException;
 import android.os.Bundle;
 import android.os.RemoteException;
@@ -42,7 +44,6 @@ import com.nightwind.contacts.widget.FullyLinearLayoutManager;
 
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -64,6 +65,8 @@ public class ContactEditorFragment extends Fragment {
     private final List<DataItemEntity> phoneItems = new ArrayList<>();
     private final List<DataItemEntity> emailItems = new ArrayList<>();
     private final Set<Long> deleteDataId = new HashSet<>();
+
+    private String originName;
 
     /**
      * Use this factory method to create a new instance of
@@ -140,6 +143,7 @@ public class ContactEditorFragment extends Fragment {
                 contact.setId(data.getId());
                 contact.setRawContactId(data.getRawContactId());
                 contact.setName(data.getName());
+                originName = data.getName();
                 contact.setPhotoUri(data.getPhotoUri());
                 ((ContactEditorAdapter)adapter).refreshData();
             }
@@ -515,8 +519,24 @@ public class ContactEditorFragment extends Fragment {
     public boolean onOptionsItemSelected(MenuItem item) {
 
         if (item.getItemId() == R.id.action_save) {
+            //检查是否为空
+            if (isEmpty()) {
+                Toast.makeText(getActivity(), R.string.warn_contact_can_not_empty,
+                        Toast.LENGTH_SHORT).show();
+                return true;
+            }
+            String newName = contact.getName();
+            if (!newName.equals(originName) && nameIsExist(newName)) {
+                Toast.makeText(getActivity(), R.string.name_is_exist,
+                        Toast.LENGTH_SHORT).show();
+                return true;
+            }
+
             try {
                 saveContact();
+                mContactLookupUri = new Contacts(getActivity()).getLookupKey(newName);
+                getActivity().setResult(Activity.RESULT_OK,
+                        new Intent().putExtra("lookupKey", mContactLookupUri));
                 getActivity().finish();
                 Toast.makeText(getActivity(), R.string.save_success, Toast.LENGTH_SHORT).show();
             } catch (RemoteException | OperationApplicationException e) {
@@ -527,6 +547,18 @@ public class ContactEditorFragment extends Fragment {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    private boolean isEmpty() {
+        return TextUtils.isEmpty(contact.getName()) || phoneItems.size() == 1 /*&& emailItems.size() == 1*/;
+    }
+
+    private boolean nameIsExist(String name) {
+        return TextUtils.isEmpty(name) || new Contacts(getActivity()).nameIsExist(name);
+    }
+
+    private boolean isInsertingContact() {
+        return mContactLookupUri == null;
     }
 
     private void saveContact() throws RemoteException, OperationApplicationException {
@@ -560,9 +592,7 @@ public class ContactEditorFragment extends Fragment {
         }
 
         //delete data
-        Iterator<Long> iterator = deleteDataId.iterator();
-        while (iterator.hasNext()) {
-            Long id = iterator.next();
+        for (Long id : deleteDataId) {
             if (id > 0) {
                 ContentValues cv = new ContentValues();
                 cv.put(ContactsContract.Data._ID, id);

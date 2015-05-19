@@ -25,6 +25,7 @@ import com.nightwind.contacts.activity.MainToolbarActivity;
 import com.nightwind.contacts.activity.PersonAddActivity;
 import com.nightwind.contacts.model.Contact;
 import com.nightwind.contacts.model.ContactsLoader;
+import com.nightwind.contacts.activity.MainToolbarActivity.PlaceholderFragment;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,6 +35,8 @@ import java.util.List;
  */
 public class ContactsFragment extends MainToolbarActivity.PlaceholderFragment {
 
+    private boolean starred = false;
+
     RecyclerView recyclerView;
     private ArrayList<Contact> contacts;
     private ContactsAdapter adapter;
@@ -41,7 +44,16 @@ public class ContactsFragment extends MainToolbarActivity.PlaceholderFragment {
     public ContactsFragment() {
         // Required empty public constructor
     }
+    private static final String ARG_STARRED = "starred";
 
+
+    public static ContactsFragment newInstance( boolean starred) {
+        ContactsFragment fragment = new ContactsFragment();
+        Bundle args = new Bundle();
+        args.putBoolean(ARG_STARRED, starred);
+        fragment.setArguments(args);
+        return fragment;
+    }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -49,13 +61,15 @@ public class ContactsFragment extends MainToolbarActivity.PlaceholderFragment {
         // Inflate the layout for this fragment
         View v =  inflater.inflate(R.layout.fragment_contacts, container, false);
 
+        starred = getArguments().getBoolean(ARG_STARRED, false);
+
         recyclerView = (RecyclerView) v.findViewById(R.id.recyclerView);
 
         recyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
 
         contacts = new ArrayList<>();
 
-        initData();
+        loadData();
 
         adapter = new ContactsAdapter(getActivity(), contacts);
         recyclerView.setAdapter(adapter);
@@ -63,17 +77,17 @@ public class ContactsFragment extends MainToolbarActivity.PlaceholderFragment {
         return  v;
     }
 
-    private void initData() {
+    public void loadData() {
 //        ContentResolver resolver = getActivity().getContentResolver();
 //        String projection[] = new String[] {Phone._ID, Phone.NUMBER, Phone.TYPE, Phone.LABEL, Phone.DISPLAY_NAME};
 ////        Cursor cursor = resolver.query(ContactsContract.Data.CONTENT_URI, projection, null, null, null);
 //        new ContactsAsyncQueryHandler(resolver, this).startQuery(0, null, Phone.CONTENT_URI, projection, null, null, null);
 
-        getLoaderManager().initLoader(0, null, new LoaderManager.LoaderCallbacks<List<Contact>>() {
+        getLoaderManager().restartLoader(0, null, new LoaderManager.LoaderCallbacks<List<Contact>>() {
 
             @Override
             public Loader<List<Contact>> onCreateLoader(int id, Bundle args) {
-                return new ContactsLoader(getActivity());
+                return new ContactsLoader(getActivity(), starred);
             }
 
             @Override
@@ -90,36 +104,12 @@ public class ContactsFragment extends MainToolbarActivity.PlaceholderFragment {
         });
     }
 
+    @Override
+    protected void reloadData() {
+        super.reloadData();
+        loadData();
+    }
 
-//    static private class ContactsAsyncQueryHandler extends AsyncQueryHandler {
-//
-//        private WeakReference<ContactFragment> contactFragment;
-//
-//        public ContactsAsyncQueryHandler(ContentResolver cr, ContactFragment contactFragment) {
-//            super(cr);
-//            this.contactFragment = new WeakReference<>(contactFragment);
-//        }
-//
-//
-//        @Override
-//        protected void onQueryComplete(int token, Object cookie, Cursor cursor) {
-//            super.onQueryComplete(token, cookie, cursor);
-//
-//            try {
-//                cursor.moveToFirst();
-//                do {
-//                    Contact contact = new Contact();
-//                    contact.name = (cursor.getString(4));
-//                    contact.phoneNumber = (cursor.getString(1));
-//                    contactFragment.get().contacts.add(contact);
-//                } while (cursor.moveToNext());
-//            } finally {
-//                cursor.close();
-//            }
-//            contactFragment.get().refreshData();
-//        }
-//
-//    }
 
     private void refreshData() {
         adapter.notifyDataSetChanged();

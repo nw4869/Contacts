@@ -257,6 +257,7 @@ public class ContactLoader extends AsyncTaskLoader<Contact> {
         final String lookupUri = cursor.getString(ContactQuery.LOOKUP_KEY);
         final String photoUri = cursor.getString(ContactQuery.PHOTO_URI);
         final String name = cursor.getString(ContactQuery.DISPLAY_NAME);
+        final boolean isStart = cursor.getInt(ContactQuery.STARRED) == 1;
 //        Log.d("ContactLoader", "photoUri = " + photoUri + " name = " + name);
 
         Contact contact = new Contact();
@@ -265,6 +266,7 @@ public class ContactLoader extends AsyncTaskLoader<Contact> {
         contact.setName(name);
         contact.setPhotoUri(photoUri);
         contact.setLookupUri(lookupUri);
+        contact.setStarred(isStart);
         return contact;
     }
 

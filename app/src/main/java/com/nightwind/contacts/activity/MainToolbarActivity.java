@@ -1,17 +1,22 @@
 package com.nightwind.contacts.activity;
 
+import android.app.Dialog;
 import android.app.SearchManager;
 import android.app.SearchableInfo;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.OperationApplicationException;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.os.RemoteException;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
@@ -26,18 +31,22 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.SearchView;
+import android.widget.Toast;
 
 import com.nightwind.contacts.R;
 import com.nightwind.contacts.fragment.ContactFragment;
 import com.nightwind.contacts.fragment.ContactsFragment;
 import com.nightwind.contacts.fragment.SearchResultListFragment;
+import com.nightwind.contacts.model.Contacts;
 import com.nightwind.contacts.widget.PagerSlidingTabStrip;
 
+import java.io.IOException;
 import java.util.Locale;
 
 public class MainToolbarActivity extends AppCompatActivity {
 
     private GestureDetector mGestureDetector;
+    private ViewPager viewPager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,7 +73,7 @@ public class MainToolbarActivity extends AppCompatActivity {
         });
 
         PagerSlidingTabStrip pagerSlidingTabStrip = (PagerSlidingTabStrip) findViewById(R.id.tabs);
-        ViewPager viewPager = (ViewPager) findViewById(R.id.pager);
+        viewPager = (ViewPager) findViewById(R.id.pager);
         viewPager.setAdapter(new SectionsPagerAdapter(getSupportFragmentManager()));
         pagerSlidingTabStrip.setViewPager(viewPager);
 
@@ -215,9 +224,40 @@ public class MainToolbarActivity extends AppCompatActivity {
             getSupportActionBar().setDisplayHomeAsUpEnabled(false);
             getSupportActionBar().setHomeButtonEnabled(false);
             getSupportFragmentManager().popBackStack(SearchResultListFragment.class.getSimpleName(), FragmentManager.POP_BACK_STACK_INCLUSIVE);
+        } else if (id == R.id.action_delete_all) {
+            Dialog dialog = new AlertDialog.Builder(this).setMessage(R.string.action_delete_all)
+                    .setNegativeButton("取消", null)
+                    .setPositiveButton("确认", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            try {
+                                new Contacts(MainToolbarActivity.this).deleteAllContacts();
+                                getCurrentFragment().reloadData();
+                            } catch (RemoteException | OperationApplicationException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }).create();
+            dialog.show();
+
+            return true;
+        } else if (id == R.id.action_export) {
+            try {
+                new Contacts(this).exportContacts();
+                Toast.makeText(this, R.string.export_success, Toast.LENGTH_SHORT).show();
+            } catch (IOException e) {
+                e.printStackTrace();
+                Toast.makeText(this, R.string.export_failed, Toast.LENGTH_SHORT).show();
+            }
+            return true;
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    private PlaceholderFragment getCurrentFragment() {
+        Fragment page = getSupportFragmentManager().findFragmentByTag("android:switcher:" + R.id.pager + ":" + viewPager.getCurrentItem());
+        return (PlaceholderFragment) page;
     }
 
     @Override
@@ -287,11 +327,17 @@ public class MainToolbarActivity extends AppCompatActivity {
                 case 1:
                     fragment = new ContactsFragment();
                     break;
+                case 2:
+                    fragment = ContactsFragment.newInstance(true);
+                    break;
                 default:
                     fragment = new PlaceholderFragment();
                     break;
             }
-            Bundle args = new Bundle();
+            Bundle args = fragment.getArguments();
+            if (args == null) {
+                args = new Bundle();
+            }
             args.putInt(ARG_SECTION_NUMBER, sectionNumber);
             fragment.setArguments(args);
             return fragment;
@@ -305,6 +351,9 @@ public class MainToolbarActivity extends AppCompatActivity {
                                  Bundle savedInstanceState) {
             View rootView = inflater.inflate(R.layout.fragment_main_tabbed, container, false);
             return rootView;
+        }
+
+        protected void reloadData() {
         }
     }
 

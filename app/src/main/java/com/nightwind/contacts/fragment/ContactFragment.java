@@ -3,8 +3,10 @@ package com.nightwind.contacts.fragment;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.OperationApplicationException;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.RemoteException;
 import android.provider.ContactsContract;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.LoaderManager;
@@ -16,16 +18,20 @@ import android.view.GestureDetector;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.nightwind.contacts.R;
 import com.nightwind.contacts.activity.ContactActivity;
+import com.nightwind.contacts.activity.PersonAddActivity;
 import com.nightwind.contacts.model.Contact;
 import com.nightwind.contacts.model.ContactLoader;
+import com.nightwind.contacts.model.Contacts;
 import com.nightwind.contacts.model.dataitem.DataItem;
 import com.nightwind.contacts.model.dataitem.EmailDataItem;
 import com.nightwind.contacts.model.dataitem.PhoneDataItem;
@@ -45,8 +51,9 @@ public class ContactFragment extends Fragment {
 
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
     private static final String ARG_CONTACT_LOOKUP_URI = "ARG_CONTACT_LOOKUP_URI";
+    private static final int REQUEST_EDIT = 0;
 
-    private String mContactLookupUri;
+    private String lookupKey;
 
     private OnFragmentInteractionListener mListener;
 
@@ -55,6 +62,8 @@ public class ContactFragment extends Fragment {
 //    private List<DataItem> dataItems = new ArrayList<>();
     private ContactAdapter adapter;
     private GestureDetector mGestureDetector;
+    private Menu mMenu;
+    private boolean loadFinish = false;
 
     /**
      * Use this factory method to create a new instance of
@@ -80,7 +89,7 @@ public class ContactFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
-            mContactLookupUri = getArguments().getString(ARG_CONTACT_LOOKUP_URI);
+            lookupKey = getArguments().getString(ARG_CONTACT_LOOKUP_URI);
         }
 
     }
@@ -102,6 +111,8 @@ public class ContactFragment extends Fragment {
 
         adapter = new ContactAdapter(getActivity(), contact);
         recyclerView.setAdapter(adapter);
+
+        setHasOptionsMenu(true);
 
         return view;
     }
@@ -236,9 +247,9 @@ public class ContactFragment extends Fragment {
                     viewHolder.itemView.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View v) {
-                            Intent intent=new Intent(Intent.ACTION_SEND);   //发送邮件使用ACTION_SEND
-                            intent.setType("plain/text");                   //设置类型
-                            intent.putExtra(Intent.EXTRA_EMAIL, emailDataItem.getAddress());
+                            // send email Intent
+                            Uri uri = Uri.parse("mailto:" + emailDataItem.getAddress());
+                            Intent intent=new Intent(Intent.ACTION_SENDTO, uri);   //发送邮件使用ACTION_SENDTO
                             startActivity(intent);
                         }
                     });
@@ -293,10 +304,10 @@ public class ContactFragment extends Fragment {
     }
 
     private void loadContact() {
-        getLoaderManager().initLoader(0, null, new LoaderManager.LoaderCallbacks<Contact>() {
+        getLoaderManager().restartLoader(0, null, new LoaderManager.LoaderCallbacks<Contact>() {
             @Override
             public Loader<Contact> onCreateLoader(int id, Bundle args) {
-                return new ContactLoader(getActivity(), mContactLookupUri);
+                return new ContactLoader(getActivity(), lookupKey);
             }
 
             @Override
@@ -304,15 +315,17 @@ public class ContactFragment extends Fragment {
                 List<DataItem> dataItems = contact.getData();
                 dataItems.clear();
                 dataItems.addAll(data.getData());
-//                contact.setData(data.getData());
                 contact.setName(data.getName());
                 contact.setPhotoUri(data.getPhotoUri());
+                contact.setStarred(data.isStarred());
+                contact.setId(data.getId());
+                contact.setRawContactId(data.getRawContactId());
                 refreshData();
+                loadFinish = true;
             }
 
             @Override
             public void onLoaderReset(Loader<Contact> loader) {
-
             }
         });
     }
@@ -322,7 +335,86 @@ public class ContactFragment extends Fragment {
             ((ContactActivity)getActivity()).getSupportActionBar().setTitle(contact.getName());
         };
         adapter.notifyDataSetChanged();
+
+        //set star menu
+        if (getActivity() != null) {
+            setStar(contact.isStarred());
+        }
     }
 
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        super.onCreateOptionsMenu(menu, inflater);
+        mMenu = menu;
+        if (loadFinish) {
+            setStar(contact.isStarred());
+        }
+    }
 
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle action bar item clicks here. The action bar will
+        // automatically handle clicks on the Home/Up button, so long
+        // as you specify a parent activity in AndroidManifest.xml.
+        int id = item.getItemId();
+
+        ContactActivity context = (ContactActivity) getActivity();
+
+        //noinspection SimplifiableIfStatement
+        if (id == R.id.action_settings) {
+            return true;
+        } else if (id == android.R.id.home) {
+            context.finish();
+//            overridePendingTransition(0, R.anim.slide_out_top);
+        } else if (id == R.id.action_edit) {
+            Intent intent = new Intent(context, PersonAddActivity.class);
+            intent.putExtra(PersonAddActivity.ARG_CONTACT_LOOKUP_URI,
+                    lookupKey);
+            startActivityForResult(intent, REQUEST_EDIT);
+            return true;
+        } else if (id == R.id.action_delete) {
+            //delete contact by lookupKey
+            try {
+                new Contacts(context).deleteContact(String.valueOf(contact.getId()), String.valueOf(contact.getRawContactId()));
+                Toast.makeText(context, R.string.delete_success, Toast.LENGTH_SHORT).show();
+                context.finish();
+                return true;
+            } catch (RemoteException | OperationApplicationException e) {
+                e.printStackTrace();
+                Toast.makeText(context, R.string.delete_failed, Toast.LENGTH_SHORT).show();
+            }
+        } else if (id == R.id.action_star) {
+            boolean starred = !contact.isStarred();
+            contact.setStarred(starred);
+            setStar(starred);
+            new Contacts(getActivity()).setStarred(lookupKey, starred);
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQUEST_EDIT && resultCode == Activity.RESULT_OK) {
+            String lookupKey = data.getStringExtra("lookupKey");
+            if (!this.lookupKey.equals(lookupKey)) {
+                this.lookupKey = lookupKey;
+                loadContact();
+            }
+        }
+    }
+
+    public void setStar(boolean starred) {
+        if (mMenu != null) {
+            MenuItem item = mMenu.findItem(R.id.action_star);
+            if (starred) {
+                item.setIcon(R.drawable.ic_action_star);
+            }
+            else {
+                item.setIcon(R.drawable.ic_action_star_outline);
+            }
+        }
+    }
 }
