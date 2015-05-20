@@ -17,12 +17,17 @@ import android.util.Log;
 import com.nightwind.contacts.model.Contact;
 import com.nightwind.contacts.model.ContactEntity;
 import com.nightwind.contacts.model.Contacts;
+import com.nightwind.contacts.model.Group;
+import com.nightwind.contacts.model.GroupSummary;
 import com.nightwind.contacts.model.dataitem.DataItem;
 import com.nightwind.contacts.model.dataitem.PhoneDataItem;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Hashtable;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by nightwind on 15/4/23.
@@ -248,6 +253,29 @@ public class ContactTest extends AndroidTestCase
     }
 
     public void testGetContactsGroup() {
+
+        Map<String, List<Long>> groups = new HashMap<>();
+        Map<Long, String> groupTitles = new HashMap<>();
+
+        // get titles
+        Cursor groupCursor = getContext().getContentResolver().query(
+                ContactsContract.Groups.CONTENT_URI,
+                new String[]{
+                        ContactsContract.Groups._ID,
+                        ContactsContract.Groups.TITLE
+                }, null, null, null
+        );
+
+        if (groupCursor.moveToFirst())
+            do {
+                long id = groupCursor.getLong(0);
+                String title = groupCursor.getString(1);
+                groupTitles.put(id, title);
+                Log.d(TAG, "id = " + id + " title = " + title);
+            } while (groupCursor.moveToNext());
+        Log.d(TAG, "getGroupsQuery done.");
+        groupCursor.close();
+
         Cursor dataCursor = getContext().getContentResolver().query(
                 ContactsContract.Data.CONTENT_URI,
                 new String[]{
@@ -263,12 +291,45 @@ public class ContactTest extends AndroidTestCase
                 long id = dataCursor.getLong(0);
                 String group = dataCursor.getString(1);
                 Log.d(TAG, "id = " + id + " group = " + group);
+                List<Long> contactIds = groups.get(group);
+                if (contactIds == null) {
+                    contactIds = new ArrayList<>();
+                    groups.put(group, contactIds);
+                }
+                contactIds.add(id);
             } while (dataCursor.moveToNext());
         dataCursor.close();
+
+
         Log.d(TAG, "getContactsGroup done.");
+    }
+
+    public void testGroup1() {
+        List<Group> groups = new Contacts(getContext()).getGroups();
+        for (Group group: groups) {
+            Log.d(TAG, "id = " + group.getId() + " title = " + group.getTitle() + " size = " + group.getMembers().size());
+        }
+        Log.d(TAG, "done.");
+    }
+
+    public void testAddGroup() {
+        long result = new Contacts(getContext()).addGroup("hello");
+        Log.d(TAG, "add group result = " + result);
+    }
+
+    public void testGroupsSummary() {
+        List<GroupSummary> groups = new Contacts(getContext()).getGroupSummary();
+        for (GroupSummary group: groups) {
+            Log.d(TAG, "id = " + group.getId() + " title = " + group.getTitle() + " size = " + group.getCount());
+        }
+        Log.d(TAG, "done.");
     }
 
     public void testExport() throws IOException {
         new Contacts(getContext()).exportContacts();
+    }
+
+    public void testGroupsMembers() {
+        new Contacts(getContext()).getGroupMembers(6);
     }
 }

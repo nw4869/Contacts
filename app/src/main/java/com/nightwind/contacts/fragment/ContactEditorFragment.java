@@ -46,6 +46,8 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -525,6 +527,7 @@ public class ContactEditorFragment extends Fragment {
                         Toast.LENGTH_SHORT).show();
                 return true;
             }
+
             String newName = contact.getName();
             if (!newName.equals(originName) && nameIsExist(newName)) {
                 Toast.makeText(getActivity(), R.string.name_is_exist,
@@ -539,7 +542,7 @@ public class ContactEditorFragment extends Fragment {
                         new Intent().putExtra("lookupKey", mContactLookupUri));
                 getActivity().finish();
                 Toast.makeText(getActivity(), R.string.save_success, Toast.LENGTH_SHORT).show();
-            } catch (RemoteException | OperationApplicationException e) {
+            } catch (RemoteException | OperationApplicationException | IllegalArgumentException e) {
                 e.printStackTrace();
                 Toast.makeText(getActivity(), R.string.save_failed, Toast.LENGTH_SHORT).show();
             }
@@ -569,6 +572,12 @@ public class ContactEditorFragment extends Fragment {
             if (phoneItems.indexOf(item) == phoneItems.size() -1) {
                 continue;
             }
+
+            if (!TextUtils.isDigitsOnly(item.data)) {
+                Toast.makeText(getActivity(), R.string.warn_number_format, Toast.LENGTH_SHORT).show();
+                throw new IllegalArgumentException();
+            }
+
             ContentValues cv = new ContentValues();
             cv.put(ContactsContract.Data._ID, item.id);
             cv.put(Phone.MIMETYPE, Phone.CONTENT_ITEM_TYPE);
@@ -582,6 +591,18 @@ public class ContactEditorFragment extends Fragment {
             if (emailItems.indexOf(item) == emailItems.size() -1) {
                 continue;
             }
+
+            //check email format
+
+            String check = "^([a-z0-9A-Z]+[-|\\.]?)+[a-z0-9A-Z]@([a-z0-9A-Z]+(-[a-z0-9A-Z]+)?\\.)+[a-zA-Z]{2,}$";
+            Pattern regex = Pattern.compile(check);
+            Matcher matcher = regex.matcher(item.data);
+            boolean isMatched = matcher.matches();
+            if (!isMatched) {
+                Toast.makeText(getActivity(), R.string.warn_email_format, Toast.LENGTH_SHORT).show();
+                throw new IllegalArgumentException();
+            }
+            
             ContentValues cv = new ContentValues();
             cv.put(ContactsContract.Data._ID, item.id);
             cv.put(Email.MIMETYPE, Email.CONTENT_ITEM_TYPE);

@@ -24,7 +24,11 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by nightwind on 15/4/22.
@@ -261,5 +265,140 @@ public class Contacts {
             fin.close();
         }
         fout.close();
+    }
+
+    public List<Group> getGroups() {
+        Map<Long, Group> groups = new HashMap<>();
+        Map<Long, String> groupTitles = new HashMap<>();
+
+        // get titles
+        Cursor groupCursor = context.getContentResolver().query(
+                ContactsContract.Groups.CONTENT_URI,
+                new String[]{
+                        ContactsContract.Groups._ID,
+                        ContactsContract.Groups.TITLE
+                }, null, null, null
+        );
+
+        if (groupCursor.moveToFirst())
+            do {
+                long id = groupCursor.getLong(0);
+                String title = groupCursor.getString(1);
+                groupTitles.put(id, title);
+//                Log.d(TAG, "id = " + id + " title = " + title);
+            } while (groupCursor.moveToNext());
+//        Log.d(TAG, "getGroupsQuery done.");
+        groupCursor.close();
+
+        Cursor dataCursor = context.getContentResolver().query(
+                ContactsContract.Data.CONTENT_URI,
+                new String[]{
+                        ContactsContract.Data.CONTACT_ID,
+                        ContactsContract.Data.DATA1
+                },
+                ContactsContract.Data.MIMETYPE + "=?",
+                new String[]{ContactsContract.CommonDataKinds.GroupMembership.CONTENT_ITEM_TYPE}, null
+        );
+
+        if (dataCursor.moveToFirst())
+            do {
+                long id = dataCursor.getLong(0);
+                String strGroupId = dataCursor.getString(1);
+                long groupId = Long.valueOf(strGroupId);
+//                Log.d(TAG, "id = " + id + " group = " + strGroupId);
+                Group group = groups.get(groupId);
+                if (group == null) {
+                    group = new Group();
+                    group.setId(groupId);
+                    group.setTitle(groupTitles.get(groupId));
+                    if (group.getMembers() == null) {
+                        group.setMembers(new ArrayList<Long>());
+                    }
+                    // add to map
+                    groups.put(groupId, group);
+                }
+                List<Long> contactIds = group.getMembers();
+                // add to members list
+                contactIds.add(id);
+            } while (dataCursor.moveToNext());
+        dataCursor.close();
+//        Log.d(TAG, "getContactsGroup done.");
+
+        // format result
+        List<Group> groupList = new ArrayList<>();
+        for (Long groupId: groups.keySet()) {
+            groupList.add(groups.get(groupId));
+        }
+        return groupList;
+    }
+
+    public long addGroup(String title) {
+        ContentValues values = new ContentValues();
+        values.put(ContactsContract.Groups.TITLE, title);
+        Uri uri = context.getContentResolver().insert(ContactsContract.Groups.CONTENT_URI, values);
+        Log.d(TAG, "URI = " + uri);
+        String[] result = uri.toString().split("/");
+        return Long.valueOf(result[result.length-1]);
+    }
+
+    public List<GroupSummary> getGroupSummary() {
+        List<GroupSummary> groupSummaries = new ArrayList<>();
+        Cursor cursor = context.getContentResolver().query(ContactsContract.Groups.CONTENT_SUMMARY_URI, null,
+                null, null, null);
+        if (cursor.moveToFirst())
+            do {
+                long id = cursor.getLong(cursor.getColumnIndex(ContactsContract.Groups._ID));
+                String title = cursor.getString(cursor.getColumnIndex(ContactsContract.Groups.TITLE));
+                int count = cursor.getInt(cursor.getColumnIndex(ContactsContract.Groups.SUMMARY_COUNT));
+                GroupSummary groupSummary = new GroupSummary(id, title, count);
+                groupSummaries.add(groupSummary);
+            } while (cursor.moveToNext());
+        cursor.close();
+        return groupSummaries;
+    }
+
+    public List<Contact> getGroupMembers(long groupId) {
+        List<Contact> contacts = new ArrayList<>();
+
+        String [] projection = new String[] {
+                ContactsContract.Data.RAW_CONTACT_ID,
+        };
+        String selection = ContactsContract.CommonDataKinds.GroupMembership.GROUP_ROW_ID
+                + "=?" + " and " + ContactsContract.Data.MIMETYPE + "= '"
+                + ContactsContract.CommonDataKinds.GroupMembership.CONTENT_ITEM_TYPE + "'";
+        String args[] = new String[] {String.valueOf(groupId)};
+        ContentResolver resolver = context.getContentResolver();
+        Cursor dataCursor = resolver.query(ContactsContract.Data.CONTENT_URI,
+                projection, selection, args, null);
+
+        Set<Long> contactIdSet = new HashSet<>();
+
+        if (dataCursor.moveToFirst())
+            do {
+                long rawContactId = dataCursor.getLong(0);
+
+                // get contact id
+                Cursor cursor = resolver.query(ContactsContract.RawContacts.CONTENT_URI,
+                        new String[] {ContactsContract.RawContacts.CONTACT_ID},
+                        ContactsContract.RawContacts._ID + "=?",
+                        new String[] {String.valueOf(rawContactId)}, null);
+
+                if (cursor.moveToFirst()) {
+                    long contactId = cursor.getLong(0);
+
+                    // check contact id set
+                    if (contactIdSet.contains(contactId)) {
+                        continue;
+                    }
+                    contactIdSet.add(contactId);
+
+                    Log.d(TAG, "contact id = " + contactId);
+                }
+                cursor.close();
+
+            } while (dataCursor.moveToNext());
+        dataCursor.close();
+
+        return contacts;
     }
 }
