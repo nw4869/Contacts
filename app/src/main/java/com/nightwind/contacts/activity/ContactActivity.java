@@ -26,7 +26,7 @@ public class ContactActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);//显示返回箭头
         getSupportActionBar().setHomeButtonEnabled(true);
 
         lookupUri = getIntent().getStringExtra(ARG_CONTACT_LOOKUP_URI);

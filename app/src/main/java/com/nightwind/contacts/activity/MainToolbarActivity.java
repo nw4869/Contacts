@@ -124,7 +124,6 @@ public class MainToolbarActivity extends AppCompatActivity {
         if(intent == null)
             return;
 
-        String queryAction = intent.getAction();
         if( Intent.ACTION_SEARCH.equals( intent.getAction())){  //如果是通过ACTION_SEARCH来调用，即如果通过搜索调用
             String queryString = intent.getStringExtra(SearchManager.QUERY); //获取搜索内容
                 getSupportFragmentManager().beginTransaction()

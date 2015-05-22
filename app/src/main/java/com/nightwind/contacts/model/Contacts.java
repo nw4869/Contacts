@@ -199,14 +199,14 @@ public class Contacts {
     }
 
 
-    public boolean setStarred(String lookupKey, boolean starred) {
+    public boolean setStarred(String lookupKey, boolean starred) {//添加联系人到常用联系人
         ContentValues values = new ContentValues();
         values.put(ContactsContract.Contacts.STARRED, starred ? 1 : 0);
         int result = context.getContentResolver().update(ContactsContract.Contacts.CONTENT_URI, values, ContactsContract.Contacts.LOOKUP_KEY + "=?", new String[]{lookupKey});
         return result == 1;
     }
 
-    public void deleteAllContacts() throws RemoteException, OperationApplicationException {
+    public void deleteAllContacts() throws RemoteException, OperationApplicationException {//清空通讯录
 
         ContentResolver resolver = context.getContentResolver();
 
@@ -245,7 +245,7 @@ public class Contacts {
     }
 
 
-    public void exportContacts() throws IOException {
+    public void exportContacts() throws IOException {//导出联系人
         String path = Environment.getExternalStorageDirectory().getPath() + "/contacts.vcf";
 
         ContentResolver cr = context.getContentResolver();
