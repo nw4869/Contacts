@@ -3,6 +3,7 @@ package com.nightwind.contacts.activity;
 import android.content.Intent;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -11,7 +12,7 @@ import android.view.View;
 import com.nightwind.contacts.R;
 import com.nightwind.contacts.fragment.ContactEditorFragment;
 
-public class PersonAddActivity extends ActionBarActivity {
+public class PersonAddActivity extends AppCompatActivity {
 
     public static final String ARG_CONTACT_LOOKUP_URI = "ARG_CONTACT_LOOKUP_URI";
 
@@ -23,8 +24,8 @@ public class PersonAddActivity extends ActionBarActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        getSupportActionBar().setHomeButtonEnabled(true);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);//显示返回键
+        getSupportActionBar().setHomeButtonEnabled(true);//设置点击有效
 
         String lookupUri = null;
         Intent intent = getIntent();

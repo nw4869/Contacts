@@ -44,7 +44,7 @@
     <string name="action_export">导出</string>
     <string name="export_failed">导出失败</string>
     <string name="export_success">导出成功，已保存到sd卡根目录下的contacts.vcf文件</string>
-    <string name="warn_number_format">手机号码必须只能为数字</string>
+    <string name="warn_number_format">手机号码必须为数字！</string>
     <string name="warn_email_format">email格式错误</string>
 
 </resources>

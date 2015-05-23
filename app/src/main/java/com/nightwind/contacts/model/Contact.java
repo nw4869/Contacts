@@ -12,7 +12,7 @@ public class Contact {
     private long rawContactId;
     private String name;
     private String photoUri;
-    private String lookupUri;
+    private String lookupUri;//联系人的标识符
     private List<DataItem> data;
     private boolean starred;
 

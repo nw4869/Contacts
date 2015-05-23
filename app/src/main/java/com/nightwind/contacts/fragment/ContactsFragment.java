@@ -78,10 +78,6 @@ public class ContactsFragment extends MainToolbarActivity.PlaceholderFragment {
     }
 
     public void loadData() {
-//        ContentResolver resolver = getActivity().getContentResolver();
-//        String projection[] = new String[] {Phone._ID, Phone.NUMBER, Phone.TYPE, Phone.LABEL, Phone.DISPLAY_NAME};
-////        Cursor cursor = resolver.query(ContactsContract.Data.CONTENT_URI, projection, null, null, null);
-//        new ContactsAsyncQueryHandler(resolver, this).startQuery(0, null, Phone.CONTENT_URI, projection, null, null, null);
 
         getLoaderManager().restartLoader(0, null, new LoaderManager.LoaderCallbacks<List<Contact>>() {
 

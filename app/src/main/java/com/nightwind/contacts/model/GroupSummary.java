@@ -4,9 +4,9 @@ package com.nightwind.contacts.model;
  * Created by nightwind on 15/5/20.
  */
 public class GroupSummary {
-    private long id;
-    private String title;
-    private int count;
+    private long id;//组的ID
+    private String title;//组名
+    private int count;//统计某个组的人数
 
     public long getId() {
         return id;
@@ -40,4 +40,5 @@ public class GroupSummary {
         this.title = title;
         this.count = count;
     }
+
 }

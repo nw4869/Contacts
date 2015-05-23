@@ -75,8 +75,6 @@ public class Contacts {
                     List<DataItem> dataItems = new ArrayList<>();
                     do {
                         String phoneNumber = dataCursor.getString(0);
-//                        Log.d(TAG, "\t\tphoneNumber = " + phoneNumber);
-
                         ContentValues values = new ContentValues();
                         values.put(ContactsContract.Data.MIMETYPE, ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE);
                         values.put(ContactsContract.CommonDataKinds.Phone.DATA, phoneNumber);
