@@ -28,6 +28,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.CheckedTextView;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Spinner;
@@ -37,6 +38,8 @@ import com.nightwind.contacts.R;
 import com.nightwind.contacts.model.Contact;
 import com.nightwind.contacts.model.ContactLoader;
 import com.nightwind.contacts.model.Contacts;
+import com.nightwind.contacts.model.Group;
+import com.nightwind.contacts.model.GroupSummary;
 import com.nightwind.contacts.model.dataitem.DataItem;
 import com.nightwind.contacts.model.dataitem.EmailDataItem;
 import com.nightwind.contacts.model.dataitem.PhoneDataItem;
@@ -66,6 +69,7 @@ public class ContactEditorFragment extends Fragment {
 
     private final List<DataItemEntity> phoneItems = new ArrayList<>();
     private final List<DataItemEntity> emailItems = new ArrayList<>();
+    private final List<GroupSpinnerEntry> groupItems = new ArrayList<>();
     private final Set<Long> deleteDataId = new HashSet<>();
 
     private String originName;
@@ -130,6 +134,15 @@ public class ContactEditorFragment extends Fragment {
 
     private void loadContact() {
 
+        // get all group title
+        groupItems.clear();
+        for (GroupSummary groupSummary: new Contacts(getActivity()).getGroupSummary()) {
+            GroupSpinnerEntry item = new GroupSpinnerEntry();
+            item.groupId = groupSummary.getId();
+            item.title = groupSummary.getTitle();
+            groupItems.add(item);
+        }
+
         getLoaderManager().initLoader(0, null, new LoaderManager.LoaderCallbacks<Contact>() {
             @Override
             public Loader<Contact> onCreateLoader(int id, Bundle args) {
@@ -166,6 +179,14 @@ public class ContactEditorFragment extends Fragment {
         public int newLabelType = 1;
     }
 
+    private class GroupSpinnerEntry {
+        long dataId;
+        long groupId;
+        String title;
+        boolean contain;
+        boolean newContain;
+    }
+
 
     private class ContactEditorAdapter extends RecyclerView.Adapter {
 
@@ -175,6 +196,7 @@ public class ContactEditorFragment extends Fragment {
         private final int VIEW_TYPE_NAME = 0;
         private final int VIEW_TYPE_PHONE = 1;
         private final int VIEW_TYPE_EMAIL = 2;
+        private final int VIEW_TYPE_GROUP = 3;
 
 
         public ContactEditorAdapter(Context context, Contact contact) {
@@ -205,6 +227,15 @@ public class ContactEditorFragment extends Fragment {
                     item.label = ((EmailDataItem)dataItem).getLabel();
                     item.labelType = ((EmailDataItem)dataItem).getType();
                     emailItems.add(item);
+                } else if (dataItem.getMimeType().equals(ContactsContract.Groups.CONTENT_ITEM_TYPE)) {
+                    long dataId = dataItem.getId();
+                    long groupId = Long.valueOf(dataItem.getData());
+                    for (GroupSpinnerEntry item: groupItems) {
+                        if (groupId == item.groupId) {
+                            item.dataId = dataId;
+                            item.contain = true;
+                        }
+                    }
                 }
             }
             phoneItems.add(new DataItemEntity());
@@ -224,8 +255,10 @@ public class ContactEditorFragment extends Fragment {
                 case VIEW_TYPE_NAME:
                     vh = new NormalEditorViewHolder(inflater.inflate(R.layout.item_editor_name, parent, false));
                     break;
+                case VIEW_TYPE_GROUP:
+                    vh = new SpinnerDataEditorViewHolder(inflater.inflate(R.layout.item_editor_data, parent, false));
+                    break;
                 default:
-//                    vh = new SpinnerDataEditorViewHolder(inflater.inflate(R.layout.item_editor_data, parent, false));
                     vh = new RecyclerEditorViewHolder(inflater.inflate(R.layout.recyclerview, parent, false));
                     break;
             }
@@ -237,6 +270,9 @@ public class ContactEditorFragment extends Fragment {
             switch (holder.getItemViewType()) {
                 case VIEW_TYPE_NAME:
                     bindNameEditor((NormalEditorViewHolder) holder);
+                    break;
+                case VIEW_TYPE_GROUP:
+                    bindGroupViewEditor((SpinnerDataEditorViewHolder) holder);
                     break;
                 case VIEW_TYPE_PHONE:
                 case VIEW_TYPE_EMAIL:
@@ -278,6 +314,27 @@ public class ContactEditorFragment extends Fragment {
             }
         }
 
+        private void bindGroupViewEditor(SpinnerDataEditorViewHolder holder) {
+            holder.data.setVisibility(View.GONE);
+            holder.typeImage.setImageResource(R.drawable.ic_group);
+
+            ArrayAdapter<GroupSpinnerEntry> spinnerAdapter
+                    = new ArrayAdapter<GroupSpinnerEntry>(context, R.layout.item_spinner_group, groupItems) {
+                @Override
+                public View getView(int position, View convertView, ViewGroup parent) {
+                    GroupSpinnerEntry group = getItem(position);
+                    if (convertView == null) {
+                        convertView = LayoutInflater.from(getActivity()).inflate(R.layout.item_spinner_group, parent, false);
+                    }
+                    CheckedTextView checkedTextView = (CheckedTextView) convertView.findViewById(R.id.checkText);
+                    checkedTextView.setText(group.title);
+                    checkedTextView.setChecked(group.contain);
+                    return convertView;
+                }
+            };
+            holder.spinner.setAdapter(spinnerAdapter);
+        }
+
         private void bindPhoneEditor(SpinnerDataEditorViewHolder holder) {
             holder.typeImage.setImageResource(R.drawable.ic_action_call);
         }
@@ -286,7 +343,7 @@ public class ContactEditorFragment extends Fragment {
         @Override
         public int getItemCount() {
             // 现只有name，phone，email
-            return 3;
+            return 4;
         }
 
 

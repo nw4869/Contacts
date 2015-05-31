@@ -1,7 +1,9 @@
 package com.nightwind.contacts.fragment;
 
 import android.app.Activity;
+import android.app.Dialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.OperationApplicationException;
 import android.net.Uri;
@@ -11,8 +13,10 @@ import android.provider.ContactsContract;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.Loader;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.GestureDetector;
 import android.view.LayoutInflater;
@@ -37,7 +41,9 @@ import com.nightwind.contacts.model.dataitem.EmailDataItem;
 import com.nightwind.contacts.model.dataitem.PhoneDataItem;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -253,6 +259,12 @@ public class ContactFragment extends Fragment {
                             startActivity(intent);
                         }
                     });
+                } else if (dataItem.getMimeType().equals(ContactsContract.CommonDataKinds.GroupMembership.CONTENT_ITEM_TYPE)) {
+                    viewHolder.typeImage.setImageResource(R.drawable.ic_group);
+                    String groupTitle = new Contacts(getActivity()).getGroupTitle(Long.valueOf(dataItem.getData()));
+                    viewHolder.data.setText(groupTitle);
+                    viewHolder.label.setText("分组");
+                    viewHolder.actionImage.setVisibility(View.INVISIBLE);
                 }
                 if (position >= 2 && dataItems.get(position - 2).getMimeType().equals(dataItem.getMimeType())) {
                     viewHolder.typeImage.setImageDrawable(null);
@@ -358,7 +370,7 @@ public class ContactFragment extends Fragment {
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
 
-        ContactActivity context = (ContactActivity) getActivity();
+        final ContactActivity context = (ContactActivity) getActivity();
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
@@ -373,16 +385,26 @@ public class ContactFragment extends Fragment {
             startActivityForResult(intent, REQUEST_EDIT);
             return true;
         } else if (id == R.id.action_delete) {
-            //delete contact by lookupKey
-            try {
-                new Contacts(context).deleteContact(String.valueOf(contact.getId()), String.valueOf(contact.getRawContactId()));
-                Toast.makeText(context, R.string.delete_success, Toast.LENGTH_SHORT).show();
-                context.finish();
-                return true;
-            } catch (RemoteException | OperationApplicationException e) {
-                e.printStackTrace();
-                Toast.makeText(context, R.string.delete_failed, Toast.LENGTH_SHORT).show();
-            }
+
+            Dialog dialog = new AlertDialog.Builder(context).setTitle(R.string.warn_delete_contact)
+                    .setNegativeButton("取消", null)
+                    .setPositiveButton("确认", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            //delete contact by lookupKey
+                            try {
+                                new Contacts(context).deleteContact(String.valueOf(contact.getId()), String.valueOf(contact.getRawContactId()));
+                                Toast.makeText(context, R.string.delete_success, Toast.LENGTH_SHORT).show();
+                                context.finish();
+                            } catch (RemoteException | OperationApplicationException e) {
+                                e.printStackTrace();
+                                Toast.makeText(context, R.string.delete_failed, Toast.LENGTH_SHORT).show();
+                            }
+                        }
+                    }).create();
+            dialog.show();
+            return true;
+
         } else if (id == R.id.action_star) {
             boolean starred = !contact.isStarred();
             contact.setStarred(starred);

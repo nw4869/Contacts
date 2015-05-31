@@ -40,11 +40,14 @@ public class ContactsFragment extends MainToolbarActivity.PlaceholderFragment {
     RecyclerView recyclerView;
     private ArrayList<Contact> contacts;
     private ContactsAdapter adapter;
+    private long groupId;
+    private View emptyView;
 
     public ContactsFragment() {
         // Required empty public constructor
     }
     private static final String ARG_STARRED = "starred";
+    private static final String ARG_GROUP_ID = "arg_group_id";
 
 
     public static ContactsFragment newInstance( boolean starred) {
@@ -55,13 +58,27 @@ public class ContactsFragment extends MainToolbarActivity.PlaceholderFragment {
         return fragment;
     }
 
+    /**
+     * show group members
+     */
+    public static ContactsFragment newInstance(long groupId) {
+        ContactsFragment fragment = new ContactsFragment();
+        Bundle args = new Bundle();
+        args.putLong(ARG_GROUP_ID, groupId);
+        fragment.setArguments(args);
+        return fragment;
+    }
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         View v =  inflater.inflate(R.layout.fragment_contacts, container, false);
+        emptyView = v.findViewById(R.id.emptyView);
 
+        // get args
         starred = getArguments().getBoolean(ARG_STARRED, false);
+        groupId = getArguments().getLong(ARG_GROUP_ID, 0);
 
         recyclerView = (RecyclerView) v.findViewById(R.id.recyclerView);
 
@@ -83,7 +100,7 @@ public class ContactsFragment extends MainToolbarActivity.PlaceholderFragment {
 
             @Override
             public Loader<List<Contact>> onCreateLoader(int id, Bundle args) {
-                return new ContactsLoader(getActivity(), starred);
+                return new ContactsLoader(getActivity(), starred, groupId);
             }
 
             @Override
@@ -109,6 +126,11 @@ public class ContactsFragment extends MainToolbarActivity.PlaceholderFragment {
 
     private void refreshData() {
         adapter.notifyDataSetChanged();
+        if (adapter.getItemCount() == 0) {
+            emptyView.setVisibility(View.VISIBLE);
+        } else {
+            emptyView.setVisibility(View.GONE);
+        }
     }
 
     private class ContactsAdapter extends RecyclerView.Adapter<ContactViewHolder> {

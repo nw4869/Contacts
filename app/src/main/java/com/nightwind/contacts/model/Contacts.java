@@ -5,6 +5,7 @@ import android.content.ContentProviderResult;
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.Intent;
 import android.content.OperationApplicationException;
 import android.content.res.AssetFileDescriptor;
 import android.database.Cursor;
@@ -19,6 +20,7 @@ import com.nightwind.contacts.model.dataitem.DataItem;
 import com.nightwind.contacts.model.dataitem.EmailDataItem;
 import com.nightwind.contacts.model.dataitem.PhoneDataItem;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -265,6 +267,15 @@ public class Contacts {
         fout.close();
     }
 
+    public void importContacts(Uri fileUri) {
+        Intent intent = new Intent(Intent.ACTION_VIEW);
+        //storage path is path of your vcf file and vFile is name of that file.
+
+        //Uri.fromFile(new File(path))
+        intent.setDataAndType(fileUri, "text/x-vcard");
+        context.startActivity(intent);
+    }
+
     public List<Group> getGroups() {
         Map<Long, Group> groups = new HashMap<>();
         Map<Long, String> groupTitles = new HashMap<>();
@@ -339,6 +350,18 @@ public class Contacts {
         return Long.valueOf(result[result.length-1]);
     }
 
+    public boolean updateGroup(long id, String title) {
+        ContentValues values = new ContentValues();
+        values.put(ContactsContract.Groups.TITLE, title);
+        return context.getContentResolver().update(ContactsContract.Groups.CONTENT_URI, values,
+                ContactsContract.Groups._ID + "=?", new String[] {String.valueOf(id)}) == 1;
+    }
+
+    public boolean deleteGroup(long id) {
+        return context.getContentResolver().delete(ContactsContract.Groups.CONTENT_URI,
+                ContactsContract.Groups._ID + "=?", new String[]{String.valueOf(id)}) == 1;
+    }
+
     public List<GroupSummary> getGroupSummary() {
         List<GroupSummary> groupSummaries = new ArrayList<>();
         Cursor cursor = context.getContentResolver().query(ContactsContract.Groups.CONTENT_SUMMARY_URI, null,
@@ -348,6 +371,12 @@ public class Contacts {
                 long id = cursor.getLong(cursor.getColumnIndex(ContactsContract.Groups._ID));
                 String title = cursor.getString(cursor.getColumnIndex(ContactsContract.Groups.TITLE));
                 int count = cursor.getInt(cursor.getColumnIndex(ContactsContract.Groups.SUMMARY_COUNT));
+
+                // skip system group
+                if (title.equals("My Contacts") || title.equals("Starred in Android")) {
+                    continue;
+                }
+
                 GroupSummary groupSummary = new GroupSummary(id, title, count);
                 groupSummaries.add(groupSummary);
             } while (cursor.moveToNext());
@@ -361,7 +390,7 @@ public class Contacts {
         String [] projection = new String[] {
                 ContactsContract.Data.RAW_CONTACT_ID,
         };
-        String selection = ContactsContract.CommonDataKinds.GroupMembership.GROUP_ROW_ID
+        String selection = ContactsContract.Data.DATA1
                 + "=?" + " and " + ContactsContract.Data.MIMETYPE + "= '"
                 + ContactsContract.CommonDataKinds.GroupMembership.CONTENT_ITEM_TYPE + "'";
         String args[] = new String[] {String.valueOf(groupId)};
@@ -377,9 +406,9 @@ public class Contacts {
 
                 // get contact id
                 Cursor cursor = resolver.query(ContactsContract.RawContacts.CONTENT_URI,
-                        new String[] {ContactsContract.RawContacts.CONTACT_ID},
+                        new String[]{ContactsContract.RawContacts.CONTACT_ID},
                         ContactsContract.RawContacts._ID + "=?",
-                        new String[] {String.valueOf(rawContactId)}, null);
+                        new String[]{String.valueOf(rawContactId)}, null);
 
                 if (cursor.moveToFirst()) {
                     long contactId = cursor.getLong(0);
@@ -391,6 +420,9 @@ public class Contacts {
                     contactIdSet.add(contactId);
 
                     Log.d(TAG, "contact id = " + contactId);
+
+                    Contact contact = loadContact(contactId);
+                    contacts.add(contact);
                 }
                 cursor.close();
 
@@ -398,5 +430,54 @@ public class Contacts {
         dataCursor.close();
 
         return contacts;
+    }
+
+    private Contact loadContact(long contactId) {
+        Cursor cursor = context.getContentResolver().query(ContactsContract.Contacts.CONTENT_URI,
+                ContactsLoader.COLUMNS,
+                ContactsContract.Contacts._ID + "=?",
+                new String[]{String.valueOf(contactId)},
+                ContactsLoader.sortOrder);
+        if (cursor.moveToFirst()) {
+            return ContactsLoader.loadContact(cursor);
+        } else {
+            return null;
+        }
+    }
+
+    public int[] getContactsStatus() {
+        Cursor cursor = context.getContentResolver().query(ContactsContract.Contacts.CONTENT_URI,
+                null, null, null, null);
+        int contactCount = cursor.getCount();
+        cursor.close();
+
+        cursor = context.getContentResolver().query(ContactsContract.Data.CONTENT_URI, null,
+                ContactsContract.Data.MIMETYPE + "=?",
+                new String[] {ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE}, null);
+        int phoneCount = cursor.getCount();
+        cursor.close();
+
+        cursor = context.getContentResolver().query(ContactsContract.Data.CONTENT_URI, null,
+                ContactsContract.Data.MIMETYPE + "=?",
+                new String[] {ContactsContract.CommonDataKinds.Email.CONTENT_ITEM_TYPE}, null);
+        int emailCount = cursor.getCount();
+        cursor.close();
+
+        return new int[] {contactCount, phoneCount, emailCount};
+    }
+
+    public String getGroupTitle(long id) {
+        Cursor cursor = context.getContentResolver().query(ContactsContract.Groups.CONTENT_URI,
+                new String[]{ContactsContract.Groups.TITLE},
+                ContactsContract.Groups._ID + "=?",
+                new String[] {String.valueOf(id)},
+                null);
+        String title = null;
+        if (cursor.moveToFirst()) {
+            title = cursor.getString(0);
+        }
+        cursor.close();
+
+        return title;
     }
 }

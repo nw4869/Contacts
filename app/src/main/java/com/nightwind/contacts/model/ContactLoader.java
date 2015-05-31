@@ -14,7 +14,9 @@ import android.util.Log;
 import com.nightwind.contacts.model.dataitem.DataItem;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Created by nightwind on 15/4/21.
@@ -227,6 +229,9 @@ public class ContactLoader extends AsyncTaskLoader<Contact> {
                 ContactQuery.SORT_ORDER);
         Contact contact = new Contact();
         List<DataItem> dataItems = new ArrayList<>();
+
+        Set<String> groupTitleSet = new HashSet<>();
+
         try {
             if (cursor.moveToFirst()) {
                 contact = loadContactHeaderData(cursor);
@@ -235,11 +240,22 @@ public class ContactLoader extends AsyncTaskLoader<Contact> {
                     values = loadDataValues(cursor);
                     String mimeType = values.getAsString(ContactsContract.Contacts.Data.MIMETYPE);
                     if (mimeType.equals(ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE)
-                            || mimeType.equals(ContactsContract.CommonDataKinds.Email.CONTENT_ITEM_TYPE)) {
+                            || mimeType.equals(ContactsContract.CommonDataKinds.Email.CONTENT_ITEM_TYPE)
+                            || mimeType.equals(CommonDataKinds.GroupMembership.CONTENT_ITEM_TYPE)) {
                         DataItem dataItem = DataItem.createFrom(values);
-                        dataItems.add(dataItem);
                         String data = cursor.getString(ContactQuery.DATA1);
                         String label = cursor.getString(ContactQuery.DATA3);
+                        if (mimeType.equals(CommonDataKinds.GroupMembership.CONTENT_ITEM_TYPE)) {
+                        String groupTitle = new Contacts(getContext()).getGroupTitle(Long.valueOf(data));
+                            Log.d("ContactLoader", "group title = " + groupTitle);
+                            if (groupTitleSet.contains(groupTitle) || groupTitle.equals("My Contacts") ||
+                                    groupTitle.equals("Starred in Android")) {
+                                continue;
+                            } else {
+                                groupTitleSet.add(groupTitle);
+                            }
+                        }
+                        dataItems.add(dataItem);
 //                        Log.d("ContactLoader", dataItems.size() + " mimeType = " + mimeType + " data = " + data + " label = " + label);
                     }
                 } while (cursor.moveToNext());

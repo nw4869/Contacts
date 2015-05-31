@@ -8,8 +8,11 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.OperationApplicationException;
+import android.database.Cursor;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.RemoteException;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
@@ -36,14 +39,20 @@ import android.widget.Toast;
 import com.nightwind.contacts.R;
 import com.nightwind.contacts.fragment.ContactFragment;
 import com.nightwind.contacts.fragment.ContactsFragment;
+import com.nightwind.contacts.fragment.GroupSummaryFragment;
 import com.nightwind.contacts.fragment.SearchResultListFragment;
 import com.nightwind.contacts.model.Contacts;
 import com.nightwind.contacts.widget.PagerSlidingTabStrip;
 
+import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.Locale;
 
 public class MainToolbarActivity extends AppCompatActivity {
+
+    public static final int REQUEST_SELECT_FILE = 0;
+    private static final String TAG = MainToolbarActivity.class.getSimpleName();
 
     private GestureDetector mGestureDetector;
     private ViewPager viewPager;
@@ -246,9 +255,62 @@ public class MainToolbarActivity extends AppCompatActivity {
                 Toast.makeText(this, R.string.export_failed, Toast.LENGTH_SHORT).show();
             }
             return true;
+        } else if (id == R.id.action_status) {
+            int[] counts = new Contacts(this).getContactsStatus();
+            Dialog dialog = new AlertDialog.Builder(this).setTitle(R.string.contacts_status)
+                    .setMessage("联系人个数：" + counts[0] + "\n\n"
+                            + "电话号码个数：" + counts[1] + "\n\n"
+                            + "Email个数：" + counts[2] )
+                    .setNegativeButton("取消", null)
+                    .setPositiveButton("确认", null)
+                    .create();
+            dialog.show();
+        } else if (id == R.id.action_import) {
+            //select file
+//            fileChooser();
+
+            // import contacts from vFile
+            String path = Environment.getExternalStorageDirectory().getPath() + "/contacts.vcf";
+            new Contacts(this).importContacts(Uri.fromFile(new File(path)));
+            getCurrentFragment().reloadData();
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    private void fileChooser() {
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        intent.setType("*/*");
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        try {
+            startActivityForResult(
+//                    Intent.createChooser(intent, "Select a File to Upload"),
+                    intent,
+                    REQUEST_SELECT_FILE);
+        } catch (android.content.ActivityNotFoundException ex) {
+            // Potentially direct the user to the Market with a Dialog
+            Toast.makeText(this, "Please install a File Manager.",
+                    Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        switch (requestCode) {
+            case REQUEST_SELECT_FILE:
+                if (resultCode == RESULT_OK) {
+                    // Get the Uri of the selected file
+                    Uri uri = data.getData();
+                    Log.d(TAG, "File Uri: " + uri.toString());
+                    // import contacts
+                    new Contacts(this).importContacts(uri);
+
+                    //refresh interface
+                    getCurrentFragment().reloadData();
+                }
+                break;
+        }
+        super.onActivityResult(requestCode, resultCode, data);
     }
 
     private PlaceholderFragment getCurrentFragment() {
@@ -325,6 +387,9 @@ public class MainToolbarActivity extends AppCompatActivity {
                     break;
                 case 2:
                     fragment = ContactsFragment.newInstance(true);
+                    break;
+                case 3:
+                    fragment = GroupSummaryFragment.newInstance();
                     break;
                 default:
                     fragment = new PlaceholderFragment();

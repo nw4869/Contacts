@@ -313,7 +313,7 @@ public class ContactTest extends AndroidTestCase
     }
 
     public void testAddGroup() {
-        long result = new Contacts(getContext()).addGroup("hello");
+        long result = new Contacts(getContext()).addGroup("world");
         Log.d(TAG, "add group result = " + result);
     }
 

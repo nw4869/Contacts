@@ -8,6 +8,10 @@
         android:orderInCategory="98" app:showAsAction="never" />
     <item android:id="@+id/action_export" android:title="@string/action_export"
         android:orderInCategory="97" app:showAsAction="never" />
+    <item android:id="@+id/action_import" android:title="@string/action_import"
+        android:orderInCategory="97" app:showAsAction="never" />
+    <item android:id="@+id/action_status" android:title="@string/action_status"
+        android:orderInCategory="97" app:showAsAction="never" />
     <item android:id="@+id/action_search" android:title="@string/action_search"
         android:orderInCategory="99" app:showAsAction="ifRoom"
         android:actionViewClass="android.widget.SearchView"

@@ -27,7 +27,7 @@ public class ContactsLoader extends AsyncTaskLoader<List<Contact>> {
     public final static int SORT_KEY_PRIMARY = 8;
 
 
-    private static final String[] COLUMNS = new String[] {
+     static final String[] COLUMNS = new String[] {
             ContactsContract.Contacts._ID, // ..........................................0
             ContactsContract.Contacts.DISPLAY_NAME, // .................................1
             ContactsContract.Contacts.STARRED, // ......................................2
@@ -39,10 +39,13 @@ public class ContactsLoader extends AsyncTaskLoader<List<Contact>> {
             ContactsContract.Contacts.SORT_KEY_PRIMARY,//...............................8
     };
     private final boolean starred;
+    private final long groupId;
+    static String sortOrder = "sort_key COLLATE LOCALIZED asc";
 
-    public ContactsLoader(Context context, boolean starred) {
+    public ContactsLoader(Context context, boolean starred, long groupId) {
         super(context);
         this.starred = starred;
+        this.groupId = groupId;
     }
 
     @Override
@@ -53,6 +56,14 @@ public class ContactsLoader extends AsyncTaskLoader<List<Contact>> {
 
     @Override
     public List<Contact> loadInBackground() {
+
+        // check if just show group members
+        if (groupId > 0) {
+            // load group members and return
+            return new Contacts(getContext()).getGroupMembers(groupId);
+        }
+
+
         String selection = null;
         String[] selectionArgs = null;
         if (starred) {
@@ -61,7 +72,7 @@ public class ContactsLoader extends AsyncTaskLoader<List<Contact>> {
         }
 
         Cursor cursor = getContext().getContentResolver().query(ContactsContract.Contacts.CONTENT_URI,
-                COLUMNS, selection, selectionArgs, "sort_key COLLATE LOCALIZED asc");
+                COLUMNS, selection, selectionArgs, sortOrder);
         List<Contact> contacts = new ArrayList<>();
         try {
             if (!cursor.moveToFirst()) {
@@ -69,26 +80,31 @@ public class ContactsLoader extends AsyncTaskLoader<List<Contact>> {
             }
 
             do {
-                int id = cursor.getInt(CONTACT_ID);
-                String name = cursor.getString(DISPLAY_NAME);
-                int starred = cursor.getInt(STARRED);
-                String lookupUri = cursor.getString(LOOKUP_KEY);
-                String photoUri = cursor.getString(PHOTO_URI);
-//                String photoThumbUri = cursor.getString(ContactsLoader.PHOTO_THUMBNAIL_URI);
-                String photoThumbUri = null;
-//                Log.d("ContactFragment", "id = " + id + " name = " + name + " starred = " + starred + " photoUri = " + photoUri + " photoThumbUri = " + photoThumbUri);
-
-                Contact contact = new Contact();
-                contact.setId(id);
-                contact.setStarred(starred == 1);
-                contact.setName(name);
-                contact.setPhotoUri(photoUri);
-                contact.setLookupUri(lookupUri);
-                contacts.add(contact);
+                contacts.add(loadContact(cursor));
             } while (cursor.moveToNext());
         } finally {
             cursor.close();
         }
         return contacts;
+    }
+
+    static Contact loadContact(Cursor cursor) {
+        int id = cursor.getInt(CONTACT_ID);
+        String name = cursor.getString(DISPLAY_NAME);
+        int starred = cursor.getInt(STARRED);
+        String lookupUri = cursor.getString(LOOKUP_KEY);
+        String photoUri = cursor.getString(PHOTO_URI);
+//                String photoThumbUri = cursor.getString(ContactsLoader.PHOTO_THUMBNAIL_URI);
+        String photoThumbUri = null;
+//                Log.d("ContactFragment", "id = " + id + " name = " + name + " starred = " + starred + " photoUri = " + photoUri + " photoThumbUri = " + photoThumbUri);
+
+        Contact contact = new Contact();
+        contact.setId(id);
+        contact.setStarred(starred == 1);
+        contact.setName(name);
+        contact.setPhotoUri(photoUri);
+        contact.setLookupUri(lookupUri);
+
+        return contact;
     }
 }

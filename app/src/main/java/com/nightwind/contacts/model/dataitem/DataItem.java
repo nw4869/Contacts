@@ -38,6 +38,8 @@ public class DataItem {
             return new PhoneDataItem(values);
         } else if (ContactsContract.CommonDataKinds.Email.CONTENT_ITEM_TYPE.equals(mimeType)) {
             return new EmailDataItem(values);
+        } else if (ContactsContract.Groups.CONTENT_ITEM_TYPE.equals(mimeType)) {
+            return new GroupMembershipDataItem(values);
         }
 
         // generic
