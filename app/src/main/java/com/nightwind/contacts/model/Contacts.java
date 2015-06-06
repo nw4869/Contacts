@@ -104,6 +104,12 @@ public class Contacts {
                 .withValue(ContactsContract.RawContacts.Data.MIMETYPE, ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE)
                 .withValue(ContactsContract.CommonDataKinds.StructuredName.GIVEN_NAME, name)
                 .build());
+        ops.add(ContentProviderOperation.newInsert(android.provider.ContactsContract.Data.CONTENT_URI)
+                .withValueBackReference(ContactsContract.RawContacts.Data.RAW_CONTACT_ID, rawContactInsertIndex)
+                .withValue(ContactsContract.RawContacts.Data.MIMETYPE, ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE)
+                .withValue(ContactsContract.CommonDataKinds.StructuredName.DISPLAY_NAME, name)
+                .build());
+
         for (DataItem dataItem : dataItems) {
             if (dataItem.getMimeType().equals(ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE)) {
                 PhoneDataItem phoneDataItem = (PhoneDataItem) dataItem;
@@ -143,6 +149,12 @@ public class Contacts {
                         new String[]{String.valueOf(contact.getRawContactId())})
                 .withValue(ContactsContract.Data.MIMETYPE, ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE)
                 .withValue(ContactsContract.CommonDataKinds.StructuredName.GIVEN_NAME, contact.getName())
+                .build());
+        ops.add(ContentProviderOperation.newUpdate(ContactsContract.Data.CONTENT_URI)
+                .withSelection(ContactsContract.Data.RAW_CONTACT_ID + "=?",
+                        new String[]{String.valueOf(contact.getRawContactId())})
+                .withValue(ContactsContract.Data.MIMETYPE, ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE)
+                .withValue(ContactsContract.CommonDataKinds.StructuredName.DISPLAY_NAME, contact.getName())
                 .build());
 
         for (DataItem dataItem : contact.getData()) {

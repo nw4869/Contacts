@@ -96,7 +96,7 @@ public class ContactsLoader extends AsyncTaskLoader<List<Contact>> {
         String photoUri = cursor.getString(PHOTO_URI);
 //                String photoThumbUri = cursor.getString(ContactsLoader.PHOTO_THUMBNAIL_URI);
         String photoThumbUri = null;
-//                Log.d("ContactFragment", "id = " + id + " name = " + name + " starred = " + starred + " photoUri = " + photoUri + " photoThumbUri = " + photoThumbUri);
+        Log.d("ContactFragment", "id = " + id + " name = " + name + " starred = " + starred + " photoUri = " + photoUri + " photoThumbUri = " + photoThumbUri);
 
         Contact contact = new Contact();
         contact.setId(id);

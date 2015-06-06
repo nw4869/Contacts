@@ -28,17 +28,18 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.BaseAdapter;
 import android.widget.CheckedTextView;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Spinner;
+import android.widget.SpinnerAdapter;
 import android.widget.Toast;
 
 import com.nightwind.contacts.R;
 import com.nightwind.contacts.model.Contact;
 import com.nightwind.contacts.model.ContactLoader;
 import com.nightwind.contacts.model.Contacts;
-import com.nightwind.contacts.model.Group;
 import com.nightwind.contacts.model.GroupSummary;
 import com.nightwind.contacts.model.dataitem.DataItem;
 import com.nightwind.contacts.model.dataitem.EmailDataItem;
@@ -69,7 +70,8 @@ public class ContactEditorFragment extends Fragment {
 
     private final List<DataItemEntity> phoneItems = new ArrayList<>();
     private final List<DataItemEntity> emailItems = new ArrayList<>();
-    private final List<GroupSpinnerEntry> groupItems = new ArrayList<>();
+    private final List<DataItemEntity> groupItems = new ArrayList<>();
+    private final List<GroupSpinnerEntry> groupSpinnerItems = new ArrayList<>();
     private final Set<Long> deleteDataId = new HashSet<>();
 
     private String originName;
@@ -135,12 +137,12 @@ public class ContactEditorFragment extends Fragment {
     private void loadContact() {
 
         // get all group title
-        groupItems.clear();
+        groupSpinnerItems.clear();
         for (GroupSummary groupSummary: new Contacts(getActivity()).getGroupSummary()) {
             GroupSpinnerEntry item = new GroupSpinnerEntry();
             item.groupId = groupSummary.getId();
             item.title = groupSummary.getTitle();
-            groupItems.add(item);
+            groupSpinnerItems.add(item);
         }
 
         getLoaderManager().initLoader(0, null, new LoaderManager.LoaderCallbacks<Contact>() {
@@ -210,6 +212,7 @@ public class ContactEditorFragment extends Fragment {
 
             phoneItems.clear();
             emailItems.clear();
+            groupItems.clear();
             for (DataItem dataItem: dataItems) {
                 if (dataItem.getMimeType().equals(Phone.CONTENT_ITEM_TYPE)) {
 //                    phoneItems.add(dataItem);
@@ -228,18 +231,28 @@ public class ContactEditorFragment extends Fragment {
                     item.labelType = ((EmailDataItem)dataItem).getType();
                     emailItems.add(item);
                 } else if (dataItem.getMimeType().equals(ContactsContract.Groups.CONTENT_ITEM_TYPE)) {
+                    DataItemEntity item = new DataItemEntity();
+                    item.id = dataItem.getId();
+                    item.data = dataItem.getData();
+                    groupItems.add(item);
+
                     long dataId = dataItem.getId();
                     long groupId = Long.valueOf(dataItem.getData());
-                    for (GroupSpinnerEntry item: groupItems) {
-                        if (groupId == item.groupId) {
-                            item.dataId = dataId;
-                            item.contain = true;
+                    for (GroupSpinnerEntry spinnerEntry: groupSpinnerItems) {
+                        if (groupId == spinnerEntry.groupId) {
+                            spinnerEntry.dataId = dataId;
+                            spinnerEntry.contain = true;
+                            item.label = spinnerEntry.title;
                         }
                     }
+
                 }
             }
+
+            // add a empty entry
             phoneItems.add(new DataItemEntity());
             emailItems.add(new DataItemEntity());
+            groupItems.add(new DataItemEntity());
         }
 
         @Override
@@ -255,9 +268,9 @@ public class ContactEditorFragment extends Fragment {
                 case VIEW_TYPE_NAME:
                     vh = new NormalEditorViewHolder(inflater.inflate(R.layout.item_editor_name, parent, false));
                     break;
-                case VIEW_TYPE_GROUP:
-                    vh = new SpinnerDataEditorViewHolder(inflater.inflate(R.layout.item_editor_data, parent, false));
-                    break;
+//                case VIEW_TYPE_GROUP:
+//                    vh = new SpinnerDataEditorViewHolder(inflater.inflate(R.layout.item_editor_data, parent, false));
+//                    break;
                 default:
                     vh = new RecyclerEditorViewHolder(inflater.inflate(R.layout.recyclerview, parent, false));
                     break;
@@ -272,8 +285,8 @@ public class ContactEditorFragment extends Fragment {
                     bindNameEditor((NormalEditorViewHolder) holder);
                     break;
                 case VIEW_TYPE_GROUP:
-                    bindGroupViewEditor((SpinnerDataEditorViewHolder) holder);
-                    break;
+//                    bindGroupViewEditor((SpinnerDataEditorViewHolder) holder);
+//                    break;
                 case VIEW_TYPE_PHONE:
                 case VIEW_TYPE_EMAIL:
                     bindRecyclerViewEditor((RecyclerEditorViewHolder) holder, holder.getItemViewType());
@@ -311,6 +324,9 @@ public class ContactEditorFragment extends Fragment {
                 case VIEW_TYPE_EMAIL:
                     holder.recyclerView.setAdapter(new recyclerEditorAdapter(context, emailItems, type));
                     break;
+                case VIEW_TYPE_GROUP:
+                    holder.recyclerView.setAdapter(new GroupAdapter(context, groupSpinnerItems, type));
+                    break;
             }
         }
 
@@ -318,20 +334,60 @@ public class ContactEditorFragment extends Fragment {
             holder.data.setVisibility(View.GONE);
             holder.typeImage.setImageResource(R.drawable.ic_group);
 
-            ArrayAdapter<GroupSpinnerEntry> spinnerAdapter
-                    = new ArrayAdapter<GroupSpinnerEntry>(context, R.layout.item_spinner_group, groupItems) {
+//            ArrayAdapter<GroupSpinnerEntry> spinnerAdapter
+//                    = new ArrayAdapter<GroupSpinnerEntry>(context, R.layout.item_spinner_text, groupSpinnerItems) {
+//                @Override
+//                public View getView(int position, View convertView, ViewGroup parent) {
+//                    GroupSpinnerEntry group = getItem(position);
+//                    if (convertView == null) {
+//                        convertView = LayoutInflater.from(getActivity()).inflate(R.layout.item_spinner_text, parent, false);
+//                    }
+////                    CheckedTextView checkedTextView = (CheckedTextView) convertView.findViewById(R.id.checkText);
+////                    checkedTextView.setText(group.title);
+////                    checkedTextView.setChecked(group.contain);
+//                    ((TextView)convertView).setText(group.title);
+//                    return convertView;
+//                }
+//            };
+
+//            List<String> titles = new ArrayList<>();
+//            for (GroupSpinnerEntry gpe: groupSpinnerItems) {
+//                titles.add(gpe.title);
+//            }
+
+            SpinnerAdapter spinnerAdapter = new BaseAdapter() {
+
+                @Override
+                public int getCount() {
+                    return groupSpinnerItems.size();
+                }
+
+                @Override
+                public Object getItem(int position) {
+                    return groupSpinnerItems.get(position);
+                }
+
+                @Override
+                public long getItemId(int position) {
+                    return groupSpinnerItems.get(position).dataId;
+                }
+
                 @Override
                 public View getView(int position, View convertView, ViewGroup parent) {
-                    GroupSpinnerEntry group = getItem(position);
+                    GroupSpinnerEntry group = groupSpinnerItems.get(position);
+
                     if (convertView == null) {
-                        convertView = LayoutInflater.from(getActivity()).inflate(R.layout.item_spinner_group, parent, false);
+                        convertView = LayoutInflater.from(context).inflate(R.layout.item_spinner_group, parent, false);
                     }
+
                     CheckedTextView checkedTextView = (CheckedTextView) convertView.findViewById(R.id.checkText);
                     checkedTextView.setText(group.title);
                     checkedTextView.setChecked(group.contain);
+
                     return convertView;
                 }
             };
+
             holder.spinner.setAdapter(spinnerAdapter);
         }
 
@@ -343,7 +399,7 @@ public class ContactEditorFragment extends Fragment {
         @Override
         public int getItemCount() {
             // 现只有name，phone，email
-            return 4;
+            return 3;
         }
 
 
@@ -409,6 +465,17 @@ public class ContactEditorFragment extends Fragment {
                     }
 
                     ((SpinnerDataEditorViewHolder) holder).data.setText(item.data);
+                } else if (type == VIEW_TYPE_GROUP) {
+                    typeImageResource = R.drawable.ic_group;
+                    textHint = "分组";
+
+                    // add spinner type label
+                    for (GroupSpinnerEntry entry: groupSpinnerItems) {
+                        spinnerList.add(entry.title);
+                    }
+
+                    // set edit text view gone
+                    viewHolder.data.setVisibility(View.GONE);
                 }
 
                 // set deleteImage action and visible or not
@@ -689,5 +756,32 @@ public class ContactEditorFragment extends Fragment {
             new Contacts(getActivity()).saveContact(contact.getName(), null, dataItems);
         }
 
+    }
+
+    private class GroupAdapter extends RecyclerView.Adapter {
+        private final Context context;
+        private final List<GroupSpinnerEntry> groupItems;
+        private final int type;
+
+        public GroupAdapter(Context context, List<GroupSpinnerEntry> groupItems, int type) {
+            this.context = context;
+            this.groupItems = groupItems;
+            this.type = type;
+        }
+
+        @Override
+        public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+            return null;
+        }
+
+        @Override
+        public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
+
+        }
+
+        @Override
+        public int getItemCount() {
+            return groupItems.size();
+        }
     }
 }

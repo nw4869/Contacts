@@ -267,12 +267,12 @@ public class MainToolbarActivity extends AppCompatActivity {
             dialog.show();
         } else if (id == R.id.action_import) {
             //select file
-//            fileChooser();
+            fileChooser();
 
-            // import contacts from vFile
-            String path = Environment.getExternalStorageDirectory().getPath() + "/contacts.vcf";
-            new Contacts(this).importContacts(Uri.fromFile(new File(path)));
-            getCurrentFragment().reloadData();
+//             import contacts from vFile
+//            String path = Environment.getExternalStorageDirectory().getPath() + "/contacts.vcf";
+//            new Contacts(this).importContacts(Uri.fromFile(new File(path)));
+//            getCurrentFragment().reloadData();
         }
 
         return super.onOptionsItemSelected(item);
@@ -284,8 +284,8 @@ public class MainToolbarActivity extends AppCompatActivity {
         intent.addCategory(Intent.CATEGORY_OPENABLE);
         try {
             startActivityForResult(
-//                    Intent.createChooser(intent, "Select a File to Upload"),
-                    intent,
+                    Intent.createChooser(intent, "Select a File to Upload"),
+//                    intent,
                     REQUEST_SELECT_FILE);
         } catch (android.content.ActivityNotFoundException ex) {
             // Potentially direct the user to the Market with a Dialog
