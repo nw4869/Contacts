@@ -9,6 +9,7 @@ import android.content.Context;
 import android.database.Cursor;
 import android.provider.ContactsContract;
 import android.provider.ContactsContract.*;
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.nightwind.contacts.model.dataitem.DataItem;
@@ -246,7 +247,10 @@ public class ContactLoader extends AsyncTaskLoader<Contact> {
                         String data = cursor.getString(ContactQuery.DATA1);
                         String label = cursor.getString(ContactQuery.DATA3);
                         if (mimeType.equals(CommonDataKinds.GroupMembership.CONTENT_ITEM_TYPE)) {
-                        String groupTitle = new Contacts(getContext()).getGroupTitle(Long.valueOf(data));
+                            if (!TextUtils.isDigitsOnly(data)) {
+                                continue;
+                            }
+                            String groupTitle = new Contacts(getContext()).getGroupTitle(Long.valueOf(data));
                             Log.d("ContactLoader", "group title = " + groupTitle);
                             if (groupTitleSet.contains(groupTitle) || groupTitle.equals("My Contacts") ||
                                     groupTitle.equals("Starred in Android")) {
