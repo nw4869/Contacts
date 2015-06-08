@@ -1,15 +1,30 @@
 package com.nightwind.contacts;
 
 import android.annotation.TargetApi;
+import android.content.ContentValues;
 import android.net.Uri;
 import android.nfc.Tag;
 import android.os.Build;
 import android.os.Environment;
+import android.provider.ContactsContract;
 import android.provider.DocumentsContract;
 import android.test.AndroidTestCase;
 import android.util.Log;
 
+import com.nightwind.contacts.model.Contact;
+import com.nightwind.contacts.model.Contacts;
+import com.nightwind.contacts.model.dataitem.DataItem;
+
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Created by nightwind on 15/6/6.
@@ -33,8 +48,9 @@ public class MiscTest extends AndroidTestCase {
         }
     }
 
-    public void testReadVCard() {
-        
+    public void testReadVCard() throws IOException {
+        Uri uri = Uri.parse("content://com.android.externalstorage.documents/document/primary%3Acontacts.vcf");
+        new Contacts(getContext()).importContacts(uri);
     }
 
 }

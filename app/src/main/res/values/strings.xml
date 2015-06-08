@@ -53,5 +53,18 @@
     <string name="empty_list">列表为空</string>
     <string name="action_import">导入联系人</string>
     <string name="warn_delete_contact">确认删除</string>
+    <string name="group_operate">分组修改</string>
+    <string name="warn_delete_group">确认删除分组</string>
+    <string name="action_edit_group_title">修改分组名称</string>
+    <string name="action_edit_group">修改分组名称</string>
+    <string name="edit_success">修改成功</string>
+    <string name="edit_failed">修改失败</string>
+    <string name="action_done">确认</string>
+    <string name="title_activity_contact_choice">ContactChoiceActivity</string>
+    <string name="remove_contact_from_group">从分组中移除</string>
+    <string name="remove_success">移除成功</string>
+    <string name="remove_failed">移除失败</string>
+    <string name="add_success">添加成功</string>
+    <string name="add_failed">添加失败</string>
 
 </resources>

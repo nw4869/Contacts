@@ -1,11 +1,14 @@
 package com.nightwind.contacts.fragment;
 
 
+import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.OperationApplicationException;
 import android.os.Bundle;
 import android.app.Fragment;
+import android.os.RemoteException;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.AsyncTaskLoader;
 import android.support.v4.content.Loader;
@@ -20,6 +23,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.nightwind.contacts.R;
 import com.nightwind.contacts.activity.GroupMembersActivity;
@@ -89,6 +93,7 @@ public class GroupSummaryFragment extends MainToolbarActivity.PlaceholderFragmen
                             long id = new Contacts(getActivity()).addGroup(groupTitle);
                             groups.add(new GroupSummary(id, groupTitle, 0));
                             adapter.notifyItemInserted(groups.size());
+                            refreshEmpty();
                         }
                     }).create();
             dialog.show();
@@ -136,6 +141,10 @@ public class GroupSummaryFragment extends MainToolbarActivity.PlaceholderFragmen
 
     private void refreshUI() {
         adapter.notifyDataSetChanged();
+        refreshEmpty();
+    }
+
+    private void refreshEmpty() {
         if (adapter.getItemCount() == 0) {
             emptyView.setVisibility(View.VISIBLE);
         } else {
@@ -174,7 +183,7 @@ public class GroupSummaryFragment extends MainToolbarActivity.PlaceholderFragmen
         }
 
         @Override
-        public void onBindViewHolder(GroupSummaryViewHolder holder, int position) {
+        public void onBindViewHolder(GroupSummaryViewHolder holder, final int position) {
             final GroupSummary group = groups.get(position);
             holder.title.setText(group.getTitle());
             holder.count.setText(group.getCount() + "人");
@@ -184,6 +193,67 @@ public class GroupSummaryFragment extends MainToolbarActivity.PlaceholderFragmen
                     Intent intent = new Intent(getActivity(), GroupMembersActivity.class);
                     intent.putExtra(GroupMembersActivity.ARG_GROUP_ID, group.getId());
                     startActivity(intent);
+                }
+            });
+            holder.itemView.setOnLongClickListener(new View.OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View v) {
+                    Dialog dialog = new AlertDialog.Builder(getActivity()).setTitle(R.string.group_operate)
+                            .setNegativeButton("修改名称", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+
+                                    final EditText editText = new EditText(getActivity());
+                                    editText.setText(group.getTitle());
+                                    new AlertDialog.Builder(getActivity())
+                                            .setView(editText)
+                                            .setTitle(R.string.action_edit_group)
+                                            .setNegativeButton("取消", null)
+                                            .setPositiveButton("确认", new DialogInterface.OnClickListener() {
+                                                @Override
+                                                public void onClick(DialogInterface dialog, int which) {
+                                                    String groupTitle = String.valueOf(editText.getText());
+                                                    int toastRes;
+                                                    if (new Contacts(getActivity()).updateGroup(group.getId(), groupTitle)) {
+                                                        toastRes = R.string.edit_success;
+                                                        group.setTitle(groupTitle);
+                                                        adapter.notifyDataSetChanged();
+                                                    } else {
+                                                        toastRes = R.string.edit_failed;
+                                                    }
+
+                                                    Toast.makeText(getActivity(), toastRes, Toast.LENGTH_SHORT).show();
+
+                                                }
+                                            }).show();
+                                }
+                            })
+                            .setPositiveButton("删除分组", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    new AlertDialog.Builder(getActivity()).setTitle(R.string.warn_delete_group)
+                                            .setPositiveButton("确认", new DialogInterface.OnClickListener() {
+                                                @Override
+                                                public void onClick(DialogInterface dialog, int which) {
+                                                    try {
+                                                        new Contacts(getActivity()).deleteGroup(group.getId());
+                                                        Toast.makeText(getActivity(), R.string.delete_success, Toast.LENGTH_SHORT).show();
+                                                    } catch (RemoteException | OperationApplicationException e) {
+                                                        e.printStackTrace();
+                                                        Toast.makeText(getActivity(), R.string.delete_failed, Toast.LENGTH_SHORT).show();
+                                                    }
+                                                    groups.remove(position);
+                                                    adapter.notifyItemRemoved(position);
+                                                    refreshEmpty();
+                                                }
+                                            })
+                                            .setNegativeButton("取消", null)
+                                            .show();
+                                }
+                            })
+                            .create();
+                    dialog.show();
+                    return true;
                 }
             });
         }

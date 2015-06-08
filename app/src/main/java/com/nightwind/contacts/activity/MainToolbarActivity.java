@@ -303,7 +303,11 @@ public class MainToolbarActivity extends AppCompatActivity {
                     Uri uri = data.getData();
                     Log.d(TAG, "File Uri: " + uri.toString());
                     // import contacts
-                    new Contacts(this).importContacts(uri);
+                    try {
+                        new Contacts(this).importContacts(uri);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
 
                     //refresh interface
                     getCurrentFragment().reloadData();

@@ -89,6 +89,24 @@ public class DataItem {
     }
 
     public long getId() {
-        return mContentValues.getAsLong(ContactsContract.Contacts.Data._ID);
+        long result = 0;
+        try {
+            result = mContentValues.getAsLong(ContactsContract.Contacts.Data._ID);
+        } catch (Exception ignored) {
+        }
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o instanceof DataItem) {
+            DataItem di = (DataItem) o;
+            if (di.getData().equals(getData()) && di.getMimeType().equals(getMimeType())) {
+                if (di.getType() == 0 && getType() == 0 && di.getLabel().equals(getLabel()) ||
+                        di.getType() > 0 && getType() == di.getType())
+                return true;
+            }
+        }
+        return false;
     }
 }

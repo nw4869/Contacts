@@ -46,6 +46,10 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="com.nightwind.contacts.activity.MainToolbarActivity" />
         </activity>
+        <activity
+            android:name=".activity.ContactChoiceActivity"
+            android:label="@string/title_activity_contact_choice" >
+        </activity>
     </application>
 
 </manifest>
