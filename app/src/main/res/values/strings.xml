@@ -5,9 +5,9 @@
     <string name="action_settings">Settings</string>
     <string name="title_activity_main">Contacts</string>
 
-    <string name="title_section1">Contacts</string>
-    <string name="title_section2">Favorite</string>
-    <string name="title_section3">Group</string>
+    <string name="title_section1">列表</string>
+    <string name="title_section2">收藏</string>
+    <string name="title_section3">分组</string>
 
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>

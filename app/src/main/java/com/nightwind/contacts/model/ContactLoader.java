@@ -353,8 +353,7 @@ public class ContactLoader extends AsyncTaskLoader<Contact> {
         return cv;
     }
 
-    private void cursorColumnToContentValues(
-            Cursor cursor, ContentValues values, int index) {
+    private void cursorColumnToContentValues(  Cursor cursor, ContentValues values, int index) {
         switch (cursor.getType(index)) {
             case Cursor.FIELD_TYPE_NULL:
                 // don't put anything in the content values
