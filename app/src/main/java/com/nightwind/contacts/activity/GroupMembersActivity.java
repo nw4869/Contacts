@@ -1,10 +1,14 @@
 package com.nightwind.contacts.activity;
 
 import android.content.Intent;
+import android.content.OperationApplicationException;
 import android.os.Bundle;
+import android.os.RemoteException;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.View;
+import android.widget.Toast;
 
 import com.nightwind.contacts.R;
 import com.nightwind.contacts.fragment.ContactsFragment;
@@ -50,5 +54,26 @@ public class GroupMembersActivity extends AppCompatActivity {
                 startActivityForResult(intent, REQUEST_CHOICE);
             }
         });
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQUEST_CHOICE && resultCode == RESULT_OK) {
+            Long[] idList = (Long[]) data.getSerializableExtra(ContactChoiceActivity.ARG_CHOICE_ARRAY);
+            for (long id: idList) {
+                Log.d("GroupMembersActivity", String.valueOf(id));
+            }
+
+            int toastRes = R.string.add_success;
+            try {
+                new Contacts(this).addToGroup(groupId, idList);
+            } catch (RemoteException | OperationApplicationException e) {
+                e.printStackTrace();
+                toastRes = R.string.add_failed;
+            }
+
+            Toast.makeText(this, toastRes, Toast.LENGTH_SHORT).show();
+        }
     }
 }

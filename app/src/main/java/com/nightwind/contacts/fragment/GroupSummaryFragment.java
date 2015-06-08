@@ -5,8 +5,10 @@ import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.OperationApplicationException;
 import android.os.Bundle;
 import android.app.Fragment;
+import android.os.RemoteException;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.AsyncTaskLoader;
 import android.support.v4.content.Loader;
@@ -233,9 +235,11 @@ public class GroupSummaryFragment extends MainToolbarActivity.PlaceholderFragmen
                                             .setPositiveButton("确认", new DialogInterface.OnClickListener() {
                                                 @Override
                                                 public void onClick(DialogInterface dialog, int which) {
-                                                    if (new Contacts(getActivity()).deleteGroup(group.getId())) {
+                                                    try {
+                                                        new Contacts(getActivity()).deleteGroup(group.getId());
                                                         Toast.makeText(getActivity(), R.string.delete_success, Toast.LENGTH_SHORT).show();
-                                                    } else {
+                                                    } catch (RemoteException | OperationApplicationException e) {
+                                                        e.printStackTrace();
                                                         Toast.makeText(getActivity(), R.string.delete_failed, Toast.LENGTH_SHORT).show();
                                                     }
                                                     groups.remove(position);

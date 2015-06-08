@@ -59,7 +59,12 @@
     <string name="action_edit_group">修改分组名称</string>
     <string name="edit_success">修改成功</string>
     <string name="edit_failed">修改失败</string>
-    <string name="action_remove">删除</string>
+    <string name="action_done">确认</string>
     <string name="title_activity_contact_choice">ContactChoiceActivity</string>
+    <string name="remove_contact_from_group">从分组中移除</string>
+    <string name="remove_success">移除成功</string>
+    <string name="remove_failed">移除失败</string>
+    <string name="add_success">添加成功</string>
+    <string name="add_failed">添加失败</string>
 
 </resources>

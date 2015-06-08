@@ -1,5 +1,6 @@
 package com.nightwind.contacts.activity;
 
+import android.content.Intent;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
@@ -10,7 +11,11 @@ import android.view.MenuItem;
 import com.nightwind.contacts.R;
 import com.nightwind.contacts.fragment.ContactsFragment;
 
-public class ContactChoiceActivity extends AppCompatActivity {
+import java.util.List;
+
+public class ContactChoiceActivity extends AppCompatActivity implements ContactsFragment.ChoiceCallbacks{
+
+    public static final String ARG_CHOICE_ARRAY = "choice_array";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,5 +55,14 @@ public class ContactChoiceActivity extends AppCompatActivity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public void onChoiceFinish(List<Long> idList) {
+        Intent intent = new Intent();
+        Long[] rawIds = idList.toArray(new Long[idList.size()]);
+        intent.putExtra(ARG_CHOICE_ARRAY, rawIds);
+        setResult(RESULT_OK, intent);
+        finish();
     }
 }

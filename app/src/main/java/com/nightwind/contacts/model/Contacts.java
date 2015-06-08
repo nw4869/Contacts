@@ -530,14 +530,35 @@ public class Contacts {
                 ContactsContract.Groups._ID + "=?", new String[] {String.valueOf(id)}) == 1;
     }
 
-    public boolean deleteGroup(long id) {
+    public void deleteGroup(long id) throws RemoteException, OperationApplicationException {
         ContentValues values = new ContentValues();
         values.put(ContactsContract.Groups.DELETED, 1);
         values.put(ContactsContract.Groups.DIRTY, 1);
-        context.getContentResolver().update(ContactsContract.Groups.CONTENT_URI, values,
-                ContactsContract.Groups._ID + "=?", new String[]{String.valueOf(id)});
-        return context.getContentResolver().delete(ContactsContract.Groups.CONTENT_URI,
-                ContactsContract.Groups._ID + "=?", new String[]{String.valueOf(id)}) == 1;
+
+        ArrayList<ContentProviderOperation> ops = new ArrayList<>();
+        ops.add(ContentProviderOperation.newUpdate(ContactsContract.Groups.CONTENT_URI)
+                .withSelection(ContactsContract.Groups._ID + "=?", new String[]{String.valueOf(id)})
+                .withValues(values)
+                .build());
+        ops.add(ContentProviderOperation.newDelete(ContactsContract.Groups.CONTENT_URI)
+                .withSelection(ContactsContract.Groups._ID + "=?", new String[]{String.valueOf(id)})
+                .build());
+        ops.add(ContentProviderOperation.newDelete(ContactsContract.Data.CONTENT_URI)
+                .withSelection(ContactsContract.CommonDataKinds.GroupMembership.GROUP_ROW_ID + "=?",
+                        new String[] {String.valueOf(id)})
+                .build());
+
+        try {
+            context.getContentResolver().applyBatch(ContactsContract.AUTHORITY, ops);
+        } catch (RemoteException | OperationApplicationException e) {
+            e.printStackTrace();
+            throw e;
+        }
+
+//        context.getContentResolver().update(ContactsContract.Groups.CONTENT_URI, values,
+//                ContactsContract.Groups._ID + "=?", new String[]{String.valueOf(id)});
+//        return context.getContentResolver().delete(ContactsContract.Groups.CONTENT_URI,
+//                ContactsContract.Groups._ID + "=?", new String[]{String.valueOf(id)}) == 1;
     }
 
     public List<GroupSummary> getGroupSummary() {
@@ -657,5 +678,89 @@ public class Contacts {
         cursor.close();
 
         return title;
+    }
+
+    public int addToGroup(long groupId, Long[] contactIds) throws RemoteException, OperationApplicationException {
+        ArrayList<ContentProviderOperation> ops = new ArrayList<>();
+        String[] projection = new String[] {
+//                ContactsContract.Contacts.Entity.CONTACT_ID,
+                ContactsContract.Contacts.Entity.RAW_CONTACT_ID,
+
+//                ContactsContract.Contacts.Entity.DATA_ID,
+                ContactsContract.Data.MIMETYPE,
+                ContactsContract.Data.DATA1,
+//                ContactsContract.Data.DATA2,
+//                ContactsContract.Data.DATA3,
+        };
+        for (long contactId: contactIds) {
+            Uri uri = Uri.withAppendedPath(ContactsContract.Contacts.CONTENT_URI,
+                    String.valueOf(contactId));
+            uri = Uri.withAppendedPath(uri, ContactsContract.Contacts.Entity.CONTENT_DIRECTORY);
+
+            Cursor cursor = context.getContentResolver().query(uri,
+                    projection,
+//                    ContactsContract.Data.MIMETYPE +
+//                        " = '" + ContactsContract.Groups.CONTENT_ITEM_TYPE + "' ",
+                    null,
+//                    new String[] {String.valueOf(contactId)},
+                    null,
+                    null);
+            try {
+                boolean exist = false;
+                String rawContactId = null;
+                if (cursor.moveToFirst()) {
+                    do {
+                        String data = cursor.getString(cursor.getColumnIndex(ContactsContract.Data.DATA1));
+                        String mimeType = cursor.getString(cursor.getColumnIndex(ContactsContract.Data.MIMETYPE));
+                        rawContactId = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts.Entity.RAW_CONTACT_ID));
+                        Log.d(TAG, "rawContactId = " + rawContactId + " mimeType = " + mimeType +  " data = " + data);
+                        if (data.equals(String.valueOf(groupId)) && mimeType.equals(ContactsContract.CommonDataKinds.GroupMembership.CONTENT_ITEM_TYPE)) {
+                            exist = true;
+                        }
+                    } while (cursor.moveToNext());
+                }
+
+                if (!exist) {
+                    ops.add(ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
+                        .withValue(ContactsContract.Data.RAW_CONTACT_ID, rawContactId)
+                        .withValue(ContactsContract.Data.MIMETYPE, ContactsContract.CommonDataKinds.GroupMembership.CONTENT_ITEM_TYPE)
+                        .withValue(ContactsContract.Data.DATA1, String.valueOf(groupId))
+                        .build());
+                }
+            } finally {
+                cursor.close();
+            }
+        }
+        ContentProviderResult[] result = context.getContentResolver().applyBatch(ContactsContract.AUTHORITY, ops);
+
+        return result.length;
+    }
+
+    private long getRawContactId(long contactId) {
+        Cursor cursor = context.getContentResolver().query(ContactsContract.RawContacts.CONTENT_URI,
+                new String[]{ContactsContract.RawContacts._ID},
+                ContactsContract.RawContacts.CONTACT_ID + "=?",
+                new String[]{String.valueOf(contactId)},
+                null);
+        if (cursor.moveToFirst()) {
+            long result = cursor.getLong(0);
+            cursor.close();
+            return result;
+        } else {
+            cursor.close();
+            throw new IllegalArgumentException();
+        }
+    }
+
+    public boolean removeContactFromGroup(long groupId, long contactId) {
+        long rawContactId = getRawContactId(contactId);
+
+        int result = context.getContentResolver().delete(ContactsContract.Data.CONTENT_URI,
+                ContactsContract.Data.MIMETYPE + "='" + ContactsContract.CommonDataKinds.GroupMembership.CONTENT_ITEM_TYPE + "' and "
+                        + ContactsContract.Data.DATA1 + "=?" + " and "
+                        + ContactsContract.Data.RAW_CONTACT_ID + "=?",
+                new String[] {String.valueOf(groupId), String.valueOf(rawContactId)});
+
+        return result == 1;
     }
 }
