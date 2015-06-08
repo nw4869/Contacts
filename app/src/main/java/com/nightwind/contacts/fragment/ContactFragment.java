@@ -206,12 +206,33 @@ public class ContactFragment extends Fragment {
         public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
             if (holder.getItemViewType() == VIEW_TYPE_PHOTO) {
                 PhotoViewHolder viewHolder = (PhotoViewHolder) holder;
+
+                // init avatar
                 if (contact.getPhotoUri() != null) {
                     viewHolder.imageView.setImageURI(Uri.parse(contact.getPhotoUri()));
                     Log.d("ContactFragment" , "loadPhoto = " + contact.getPhotoUri());
                 } else {
                     Log.d("ContactFragment", "no photo");
                 }
+                viewHolder.imageView.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        new AlertDialog.Builder(getActivity()).setTitle(R.string.modify_avatar)
+                                .setNegativeButton("拍照", new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialog, int which) {
+                                        // TODO
+                                    }
+                                })
+                                .setPositiveButton("选择图片", new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialog, int which) {
+                                        // TODO
+                                    }
+                                }).show();
+                    }
+                });
+
             } else {
                 DataItem dataItem = dataItems.get(position - 1);
                 DataItemViewHolder viewHolder = (DataItemViewHolder) holder;
