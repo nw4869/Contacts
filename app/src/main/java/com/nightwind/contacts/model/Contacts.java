@@ -16,14 +16,17 @@ import android.provider.ContactsContract;
 import android.text.TextUtils;
 import android.util.Log;
 
+import com.nightwind.contacts.FileUtils;
 import com.nightwind.contacts.model.dataitem.DataItem;
 import com.nightwind.contacts.model.dataitem.EmailDataItem;
 import com.nightwind.contacts.model.dataitem.PhoneDataItem;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -234,6 +237,14 @@ public class Contacts {
         }
         cursor.close();
 
+        // clear groups
+//        My Contacts") || title.equals("Starred in Android"
+        int result = resolver.delete(ContactsContract.Groups.CONTENT_URI,
+                ContactsContract.Groups.TITLE + " != 'My Contacts'" +
+                        " and " + ContactsContract.Groups.TITLE +
+                        " != 'Starred in Android'",
+                null);
+        Log.d(TAG, "delete groups number = " + result);
     }
 
     public String getLookupKey(String name) {
@@ -279,13 +290,163 @@ public class Contacts {
         fout.close();
     }
 
-    public void importContacts(Uri fileUri) {
-        Intent intent = new Intent(Intent.ACTION_VIEW);
+
+    public void importContacts(Uri fileUri) throws IOException {
+//        Intent intent = new Intent(Intent.ACTION_VIEW);
         //storage path is path of your vcf file and vFile is name of that file.
 
         //Uri.fromFile(new File(path))
-        intent.setDataAndType(fileUri, "text/x-vcard");
-        context.startActivity(intent);
+//        intent.setDataAndType(fileUri, "text/x-vcard");
+//        context.startActivity(intent);
+
+
+        //get all contacts list
+        List<Contact> contacts = new ContactsLoader(context, false, 0).loadInBackground();
+        Map<String, Contact> contactMap = new HashMap<>();
+        for (Contact contact: contacts) {
+            contact = new ContactLoader(context, contact.getLookupUri()).loadInBackground();
+            contactMap.put(contact.getName(), contact);
+        }
+
+//        Uri uri = Uri.parse("content://com.android.externalstorage.documents/document/primary:contacts.vcf");
+        String path = FileUtils.getPath(context, fileUri);
+        Log.d(TAG, "path = " + path);
+
+        if (path != null) {
+            File file = new File(path);
+            BufferedReader br = new BufferedReader(new FileReader(file));
+            Contact contact = new Contact();
+            contact.setData(new ArrayList<DataItem>());
+
+            Log.d(TAG, "VCard begin ----------------");
+            String line;
+            boolean begin = false;
+            while ((line = br.readLine()) != null) {
+                Log.d(TAG, line);
+                if (line.equals("BEGIN:VCARD")) {
+                    begin = true;
+                    contact = new Contact();
+                    contact.setData(new ArrayList<DataItem>());
+                } else if (line.equals("END:VCARD")) {
+                    // read a contact end
+                    begin = false;
+
+                    // update or insert to database
+                    Contact origin = contactMap.get(contact.getName());
+                    if (origin == null) {
+                        // insert a new contact
+                        try {
+                            saveContact(contact.getName(), null, contact.getData());
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    } else {
+                        // name exist
+                        // update contact: add new data item
+                        List<DataItem> newDataItem = new ArrayList<>(origin.getData());
+                        for (DataItem dataItem: contact.getData()) {
+                            boolean exist = false;
+                            for (DataItem orgDataItem: origin.getData()) {
+                                if (orgDataItem.equals(dataItem)) {
+                                    exist = true;
+                                    break;
+                                }
+                            }
+                            if (!exist) {
+                                newDataItem.add(dataItem);
+                            }
+                        }
+                        try {
+                            if (newDataItem.size() > origin.getData().size()) {
+                                // have new data item
+                                origin.setData(newDataItem);
+                                updateContact(origin);
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+
+                } else if (begin) {
+                    try {
+                        int type = 0;
+                        if (line.matches("^N:.*;")) {
+                            String[] info = line.split(";");
+                            String name = info[1];
+                            contact.setName(name);
+                        } else if (line.matches("^TEL;.+")) {
+                            type = 1;
+                        } else if (line.matches("^EMAIL;.+")) {
+                            type = 2;
+                        }
+
+                        if (type == 1 || type == 2) {
+                            String info = line.split(";")[1];
+                            String[] item = info.split(":");
+                            String label = item[0];
+                            String data = item[1];
+
+                            String mimeType;
+                            if (type == 1) {
+                                mimeType = ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE;
+                                // 号码清除’-‘和空格
+                                data = data.replaceAll("\\s|-", "");
+                            } else if (type == 2) {
+                                mimeType = ContactsContract.CommonDataKinds.Email.CONTENT_ITEM_TYPE;
+                            } else {
+                                //not tel or email
+                                continue;
+                            }
+
+                            int labelType = getLabelType(label, mimeType);
+
+                            ContentValues values = new ContentValues();
+                            values.put(ContactsContract.Data.MIMETYPE, mimeType);
+                            values.put(ContactsContract.Data.DATA1, data);
+                            values.put(ContactsContract.Data.DATA2, labelType);
+                            values.put(ContactsContract.Data.DATA3, label);
+
+                            contact.getData().add(DataItem.createFrom(values));
+
+                            Log.d(TAG, "data = " + data + " labelType = " + labelType + " label = " + label);
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+            Log.d(TAG, "VCard end ----------------");
+
+
+            br.close();
+        } else {
+            Log.d(TAG, "file not found");
+        }
+
+    }
+
+    private int getLabelType(String label, String mimeType) {
+        int labelType = 0;
+        if (mimeType.equals(ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE)) {
+            for (int i = 1; i < ContactsContract.CommonDataKinds.Phone.TYPE_MMS; i++) {
+                if (label.equalsIgnoreCase(String.valueOf(
+                        ContactsContract.CommonDataKinds.Phone.
+                                getTypeLabel(context.getResources(), i, label)))) {
+                    labelType = i;
+                    break;
+                }
+            }
+        } else if (mimeType.equals(ContactsContract.CommonDataKinds.Email.CONTENT_ITEM_TYPE)) {
+            for (int i = 1; i < ContactsContract.CommonDataKinds.Email.TYPE_MOBILE; i++) {
+                if (label.equalsIgnoreCase(String.valueOf(
+                        ContactsContract.CommonDataKinds.Email.
+                                getTypeLabel(context.getResources(), i, label)))) {
+                    labelType = i;
+                    break;
+                }
+            }
+        }
+        return labelType;
     }
 
     public List<Group> getGroups() {
@@ -370,6 +531,11 @@ public class Contacts {
     }
 
     public boolean deleteGroup(long id) {
+        ContentValues values = new ContentValues();
+        values.put(ContactsContract.Groups.DELETED, 1);
+        values.put(ContactsContract.Groups.DIRTY, 1);
+        context.getContentResolver().update(ContactsContract.Groups.CONTENT_URI, values,
+                ContactsContract.Groups._ID + "=?", new String[]{String.valueOf(id)});
         return context.getContentResolver().delete(ContactsContract.Groups.CONTENT_URI,
                 ContactsContract.Groups._ID + "=?", new String[]{String.valueOf(id)}) == 1;
     }
@@ -377,7 +543,7 @@ public class Contacts {
     public List<GroupSummary> getGroupSummary() {
         List<GroupSummary> groupSummaries = new ArrayList<>();
         Cursor cursor = context.getContentResolver().query(ContactsContract.Groups.CONTENT_SUMMARY_URI, null,
-                null, null, null);
+                ContactsContract.Groups.DELETED + "=0", null, null);
         if (cursor.moveToFirst())
             do {
                 long id = cursor.getLong(cursor.getColumnIndex(ContactsContract.Groups._ID));
