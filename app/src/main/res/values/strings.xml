@@ -66,5 +66,6 @@
     <string name="remove_failed">移除失败</string>
     <string name="add_success">添加成功</string>
     <string name="add_failed">添加失败</string>
+    <string name="modify_avatar">修改头像</string>
 
 </resources>

@@ -354,6 +354,13 @@ public class ContactLoader extends AsyncTaskLoader<Contact> {
 //        cursorColumnToContentValues(cursor, cv, ContactQuery.TIMES_USED);
 //        cursorColumnToContentValues(cursor, cv, ContactQuery.LAST_TIME_USED);
 
+        // 过滤号码中的‘-’和空格
+        if (CommonDataKinds.Phone.CONTENT_ITEM_TYPE.equals(cursor.getString(ContactQuery.MIMETYPE))) {
+            String data = cursor.getString(ContactQuery.DATA1);
+            data = data.replaceAll("\\s|-", "");
+            cv.put(Data.DATA1, data);
+        }
+
         return cv;
     }
 
