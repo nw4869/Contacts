@@ -332,4 +332,9 @@ public class ContactTest extends AndroidTestCase
     public void testGroupsMembers() {
         new Contacts(getContext()).getGroupMembers(6);
     }
+
+
+    public void testMyExport() throws IOException {
+        new Contacts(getContext()).myExportContacts();
+    }
 }

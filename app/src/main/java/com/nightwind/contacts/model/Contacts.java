@@ -21,12 +21,15 @@ import com.nightwind.contacts.model.dataitem.DataItem;
 import com.nightwind.contacts.model.dataitem.EmailDataItem;
 import com.nightwind.contacts.model.dataitem.PhoneDataItem;
 
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -290,6 +293,66 @@ public class Contacts {
         fout.close();
     }
 
+    public void myExportContacts() throws IOException {
+
+        String path = Environment.getExternalStorageDirectory().getPath() + "/contacts.vcf";
+//        FileOutputStream fout = new FileOutputStream(path);
+        FileWriter fw = new FileWriter(path);
+
+        ContentResolver cr = context.getContentResolver();
+        Cursor cur = cr.query(ContactsContract.Contacts.CONTENT_URI, null, null, null, null);
+        int index = cur.getColumnIndex(ContactsContract.Contacts.LOOKUP_KEY);
+
+//        byte[] data = new byte[1024 * 1];
+        while (cur.moveToNext()) {
+            String lookupKey = cur.getString(index);
+            Contact contact = new ContactLoader(context, lookupKey).loadInBackground();
+
+            StringBuilder vCard = new StringBuilder();
+
+            vCard.append("BEGIN:VCARD\n" +
+                    "VERSION:2.1\n");
+
+            vCard.append("N:;").append(contact.getName()).append(";;;\n");
+
+            for (DataItem dataItem: contact.getData()) {
+
+                String label;
+                if (dataItem instanceof PhoneDataItem) {
+                    vCard.append("TEL;");
+                    // label
+                    label = String.valueOf(ContactsContract.CommonDataKinds.Phone.getTypeLabel(
+                            context.getResources(),
+                            dataItem.getType(),
+                            dataItem.getLabel()
+                    ));
+
+                } else if (dataItem instanceof EmailDataItem) {
+                    vCard.append("EMAIL;");
+                    // label
+                    label = String.valueOf(ContactsContract.CommonDataKinds.Email.getTypeLabel(
+                            context.getResources(),
+                            dataItem.getType(),
+                            dataItem.getLabel()
+                    ));
+                } else {
+                    continue;
+                }
+
+                //label
+                vCard.append(label).append(":");
+
+                // data
+                vCard.append(dataItem.getData()).append("\n");
+            }
+
+            vCard.append("END:VCARD\n");
+
+            fw.write(vCard.toString());
+        }
+        fw.close();
+        cur.close();
+    }
 
     public void importContacts(Uri fileUri) throws IOException {
 //        Intent intent = new Intent(Intent.ACTION_VIEW);
@@ -762,5 +825,27 @@ public class Contacts {
                 new String[] {String.valueOf(groupId), String.valueOf(rawContactId)});
 
         return result == 1;
+    }
+
+    public void updatePhoto(byte[] b, long rawId) throws RemoteException, OperationApplicationException {
+        ContentValues values = new ContentValues();
+        values.put(ContactsContract.CommonDataKinds.Phone.DATA15, b);
+//        int result = context.getcontentresolver().update(contactscontract.data.content_uri,
+//                values,
+//                contactscontract.data.raw_contact_id + "=?"
+//                + " and " + contactscontract.data.mimetype + "=?",
+//                new string[] {string.valueof(rawid), contactscontract.commondatakinds.phone.content_item_type});
+//        if (result == 0) {
+            ArrayList<ContentProviderOperation> ops = new ArrayList<>();
+            ops.add(ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
+//                .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0)
+                    .withValue(ContactsContract.Data.RAW_CONTACT_ID, rawId)
+                    .withValue(ContactsContract.Data.MIMETYPE,
+                            ContactsContract.CommonDataKinds.Photo.CONTENT_ITEM_TYPE)
+                    .withValue(ContactsContract.CommonDataKinds.Photo.DATA15, b)
+                    .build());
+
+            context.getContentResolver().applyBatch(ContactsContract.AUTHORITY, ops);
+//        }
     }
 }
