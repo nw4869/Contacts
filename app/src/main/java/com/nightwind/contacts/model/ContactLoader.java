@@ -223,7 +223,7 @@ public class ContactLoader extends AsyncTaskLoader<Contact> {
 //        String strUri = "content://com.android.contacts/contacts/lookup/2247i41f325320854105c.2247i3f177fc58fc6ac0c/entities";
         Uri uri = Uri.parse(strUri);
 
-        Log.d("ContactLoader", "uri = " + uri);
+//        Log.d("ContactLoader", "uri = " + uri);
 
         Cursor cursor = resolver.query(uri /*ContactsContract.Contacts.CONTENT_URI*/, ContactQuery.COLUMNS,
                 ContactQuery.SELECTION_LOOKUP, selectionArgs,

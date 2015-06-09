@@ -2,14 +2,20 @@ package com.nightwind.contacts.fragment;
 
 import android.app.Activity;
 import android.app.Dialog;
+import android.content.ContentProviderOperation;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.OperationApplicationException;
+import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.RemoteException;
 import android.provider.ContactsContract;
+import android.provider.MediaStore;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.Loader;
@@ -40,6 +46,7 @@ import com.nightwind.contacts.model.dataitem.DataItem;
 import com.nightwind.contacts.model.dataitem.EmailDataItem;
 import com.nightwind.contacts.model.dataitem.PhoneDataItem;
 
+import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -58,6 +65,9 @@ public class ContactFragment extends Fragment {
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
     private static final String ARG_CONTACT_LOOKUP_URI = "ARG_CONTACT_LOOKUP_URI";
     private static final int REQUEST_EDIT = 0;
+    private static final int REQUEST_LOAD_IMAGE = 1;
+    private static final String TAG = ContactFragment.class.getSimpleName();
+    private static final int REQUEST_CODE_CAPTURE_CAMEIA = 2;
 
     private String lookupKey;
 
@@ -70,6 +80,7 @@ public class ContactFragment extends Fragment {
     private GestureDetector mGestureDetector;
     private Menu mMenu;
     private boolean loadFinish = false;
+    private ImageView avatar;
 
     /**
      * Use this factory method to create a new instance of
@@ -207,6 +218,8 @@ public class ContactFragment extends Fragment {
             if (holder.getItemViewType() == VIEW_TYPE_PHOTO) {
                 PhotoViewHolder viewHolder = (PhotoViewHolder) holder;
 
+                avatar = viewHolder.imageView;
+
                 // init avatar
                 if (contact.getPhotoUri() != null) {
                     viewHolder.imageView.setImageURI(Uri.parse(contact.getPhotoUri()));
@@ -222,12 +235,17 @@ public class ContactFragment extends Fragment {
                                     @Override
                                     public void onClick(DialogInterface dialog, int which) {
                                         // TODO
+                                        getImageFromCamera();
                                     }
                                 })
                                 .setPositiveButton("选择图片", new DialogInterface.OnClickListener() {
                                     @Override
                                     public void onClick(DialogInterface dialog, int which) {
                                         // TODO
+                                        Intent i = new Intent(Intent.ACTION_PICK,
+                                                android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+                                        startActivityForResult(i, REQUEST_LOAD_IMAGE);
+
                                     }
                                 }).show();
                     }
@@ -258,7 +276,7 @@ public class ContactFragment extends Fragment {
                     viewHolder.itemView.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View v) {
-                            Intent intent = new Intent(Intent.ACTION_CALL,Uri.parse("tel:"+phoneDataItem.getNumber()));
+                            Intent intent = new Intent(Intent.ACTION_CALL, Uri.parse("tel:" + phoneDataItem.getNumber()));
                             startActivity(intent);
                         }
                     });
@@ -276,7 +294,7 @@ public class ContactFragment extends Fragment {
                         public void onClick(View v) {
                             // send email Intent
                             Uri uri = Uri.parse("mailto:" + emailDataItem.getAddress());
-                            Intent intent=new Intent(Intent.ACTION_SENDTO, uri);   //发送邮件使用ACTION_SENDTO
+                            Intent intent = new Intent(Intent.ACTION_SENDTO, uri);   //发送邮件使用ACTION_SENDTO
                             startActivity(intent);
                         }
                     });
@@ -437,6 +455,16 @@ public class ContactFragment extends Fragment {
         return super.onOptionsItemSelected(item);
     }
 
+    protected void getImageFromCamera() {
+        String state = Environment.getExternalStorageState();
+        if (state.equals(Environment.MEDIA_MOUNTED)) {
+            Intent getImageByCamera = new Intent("android.media.action.IMAGE_CAPTURE");
+            startActivityForResult(getImageByCamera, REQUEST_CODE_CAPTURE_CAMEIA);
+        }
+        else {
+            Toast.makeText(getActivity(), "请确认已经插入SD卡", Toast.LENGTH_LONG).show();
+        }
+    }
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -447,6 +475,111 @@ public class ContactFragment extends Fragment {
                 loadContact();
             }
         }
+
+        if (requestCode == REQUEST_LOAD_IMAGE && resultCode == Activity.RESULT_OK && null != data) {
+            Uri selectedImage = data.getData();
+            Log.d(TAG, "selectionImage = " + selectedImage);
+            String[] filePathColumn = {MediaStore.Images.Media.DATA};
+
+            Cursor cursor = getActivity().getContentResolver().query(selectedImage,
+                    filePathColumn, null, null, null);
+            cursor.moveToFirst();
+
+            int columnIndex = cursor.getColumnIndex(filePathColumn[0]);
+            String picturePath = cursor.getString(columnIndex);
+            cursor.close();
+
+            // String picturePath contains the path of selected Image
+            Log.d(TAG, "picture path = " + picturePath);
+
+            if (avatar != null) {
+                avatar.setImageURI(selectedImage);
+//                Bitmap bmImage = BitmapFactory.decodeFile(picturePath);
+//                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+//                bmImage.compress(Bitmap.CompressFormat.JPEG, 80, baos);
+//                byte[] b = baos.toByteArray();
+//                avatar.setImageBitmap(bmImage);
+            }
+
+            try {
+                saveImage(picturePath, null);
+            } catch (RemoteException | OperationApplicationException e) {
+                e.printStackTrace();
+            }
+        }
+
+        if (requestCode == REQUEST_CODE_CAPTURE_CAMEIA && resultCode == Activity.RESULT_OK) {
+            Uri uri = data.getData();
+            if (uri == null) {
+                //use bundle to get data
+                Bundle bundle = data.getExtras();
+                if (bundle != null) {
+                    Bitmap photo = (Bitmap) bundle.get("data"); //get bitmap
+                    avatar.setImageBitmap(photo);
+                    //spath :生成图片取个名字和路径包含类型
+                    try {
+                        saveImage(null, photo);
+                    } catch (RemoteException | OperationApplicationException e) {
+                        e.printStackTrace();
+                    }
+                } else {
+                    Toast.makeText(getActivity(), "err****", Toast.LENGTH_LONG).show();
+                    return;
+                }
+            } else {
+                //to do find the path of pic by uri
+                Log.d(TAG, "selectionImage = " + uri);
+                String[] filePathColumn = {MediaStore.Images.Media.DATA};
+
+                Cursor cursor = getActivity().getContentResolver().query(uri,
+                        filePathColumn, null, null, null);
+                cursor.moveToFirst();
+
+                int columnIndex = cursor.getColumnIndex(filePathColumn[0]);
+                String picturePath = cursor.getString(columnIndex);
+                cursor.close();
+
+                // String picturePath contains the path of selected Image
+                Log.d(TAG, "picture path = " + picturePath);
+
+                if (avatar != null) {
+                    avatar.setImageURI(uri);
+                }
+
+                try {
+                    saveImage(picturePath, null);
+                } catch (RemoteException | OperationApplicationException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    private void saveImage(String imagePath, Bitmap bitmap) throws RemoteException, OperationApplicationException {
+        byte[] b = null;
+        if (bitmap == null) {
+
+            bitmap = BitmapFactory.decodeFile(imagePath);
+        }
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 80, baos);
+        b = baos.toByteArray();
+
+        if (b == null) {
+            return;
+        }
+
+//        ArrayList<ContentProviderOperation> ops = new ArrayList<>();
+//        ops.add(ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
+////                .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0)
+//                .withValue(ContactsContract.Data.RAW_CONTACT_ID, contact.getRawContactId())
+//                .withValue(ContactsContract.Data.MIMETYPE,
+//                        ContactsContract.CommonDataKinds.Photo.CONTENT_ITEM_TYPE)
+//                .withValue(ContactsContract.CommonDataKinds.Photo.DATA15, b)
+//                .build());
+//
+//        getActivity().getContentResolver().applyBatch(ContactsContract.AUTHORITY, ops);
+        new Contacts(getActivity()).updatePhoto(b, contact.getRawContactId());
     }
 
     public void setStar(boolean starred) {

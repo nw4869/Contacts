@@ -248,7 +248,7 @@ public class MainToolbarActivity extends AppCompatActivity {
             return true;
         } else if (id == R.id.action_export) {
             try {
-                new Contacts(this).exportContacts();
+                new Contacts(this).myExportContacts();
                 Toast.makeText(this, R.string.export_success, Toast.LENGTH_SHORT).show();
             } catch (IOException e) {
                 e.printStackTrace();
