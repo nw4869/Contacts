@@ -223,7 +223,7 @@ public class MainToolbarActivity extends AppCompatActivity {
 
         int id = item.getItemId();
 
-        if (id == R.id.action_settings) {
+       if (id == R.id.action_settings) {
             return true;
         } else if (id == android.R.id.home) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(false);
